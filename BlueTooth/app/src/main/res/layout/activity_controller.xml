@@ -11,18 +11,16 @@
     tools:context="first.alexander.com.myapplication.ControllerActivity">
 
     <Button
-        android:text="Send"
+        android:text="Speak"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerVertical="true"
         android:layout_centerHorizontal="true"
         android:id="@+id/btnSend" />
 
-    <EditText
+    <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:inputType="text"
-        android:text=""
         android:ems="10"
         android:layout_above="@+id/btnSend"
         android:layout_centerHorizontal="true"

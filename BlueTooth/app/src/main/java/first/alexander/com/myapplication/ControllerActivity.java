@@ -6,11 +6,15 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.*;
 import android.os.AsyncTask;
+import android.speech.RecognizerIntent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.KeyEvent;
 import android.widget.*;
 import android.view.View;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Locale;
 import java.util.UUID;
 
 
@@ -19,7 +23,7 @@ public class ControllerActivity extends AppCompatActivity {
 
     //Initialize all variables and other objects
     Button   btnSend, btnReturn;
-    EditText editText;
+    TextView editText;
 
     private ProgressDialog progress;
 
@@ -39,12 +43,13 @@ public class ControllerActivity extends AppCompatActivity {
 
 
         btnSend = (Button) findViewById(R.id.btnSend);
-        editText = (EditText) findViewById(R.id.editText);
+        editText = (TextView) findViewById(R.id.editText);
 
         btnSend.setOnClickListener(new View.OnClickListener() {
 
             public void onClick(View v) {
-                sendText();
+                //sendText();
+                promptSpeech();
             }
         });
 
@@ -72,16 +77,75 @@ public class ControllerActivity extends AppCompatActivity {
 
     }
 
+    public void promptSpeech() {
+        Intent i = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        i.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
+        i.putExtra(RecognizerIntent.EXTRA_PROMPT, "Say something");
 
+        try {
+            startActivityForResult(i, 100);
+        } catch(ActivityNotFoundException a) {
+            Toast.makeText(ControllerActivity.this, "Your device does not support speech language", Toast.LENGTH_SHORT).show();
+
+        }
+
+    }
+
+    public void onActivityResult(int request_code, int result_code, Intent i) {
+        super.onActivityResult(request_code, result_code, i);
+        switch(request_code) {
+            case 100:
+                if(result_code == RESULT_OK && i != null) {
+
+                    ArrayList<String> result = i.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+                    if(result.get(0).equals("track") || result.get(0).equals("truck")) {
+                        editText.setText("success");
+                        sendText(result.get(0));
+
+                    }
+                    else {
+                        editText.setText(result.get(0));
+                        sendText(result.get(0));
+
+                    }
+
+                }
+
+                break;
+        }
+    }
+
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent event) {
+        int action = event.getAction();
+        int keyCode = event.getKeyCode();
+        switch (keyCode) {
+            case KeyEvent.KEYCODE_VOLUME_UP:
+                if (action == KeyEvent.ACTION_DOWN) {
+                    //TODO
+                    promptSpeech();
+                }
+                return true;
+            case KeyEvent.KEYCODE_VOLUME_DOWN:
+                if (action == KeyEvent.ACTION_DOWN) {
+                    //TODO
+                    promptSpeech();
+                }
+                return true;
+            default:
+                return super.dispatchKeyEvent(event);
+        }
+    }
     //Function to send the text to DE1-Soc
-    private void sendText()
+    private void sendText(String s)
     {
         if (btSocket!=null)
         {
             try
             {
                 msg("Sending");
-                btSocket.getOutputStream().write(editText.getText().toString().getBytes());
+                btSocket.getOutputStream().write(s.toString().getBytes());
             }
             catch (IOException e)
             {
