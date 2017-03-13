@@ -4,6 +4,14 @@
 
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
     <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+
+
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="true" />
 
     <application
         android:allowBackup="true"
@@ -19,7 +27,10 @@
             </intent-filter>
         </activity>
         <activity android:name=".DeviceListActivity" />
-        <activity android:name=".ControllerActivity"></activity>
+        <activity android:name=".ControllerActivity" />
+        <service android:name=".CameraService"/>
+
+
     </application>
 
 </manifest>
