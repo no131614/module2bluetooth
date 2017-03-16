@@ -20,8 +20,7 @@
             android:layout_width="248dp"
             android:layout_height="48dp"
             android:layout_marginBottom="24dp"
-            android:layout_gravity="center_horizontal"
-            android:layout_weight="0.05"/>
+            android:layout_gravity="center_horizontal"/>
 
         <!--  Name Label -->
         <android.support.design.widget.TextInputLayout
@@ -80,7 +79,7 @@
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp"
-            android:text="Login"
+            android:text="Already Have An Account?"
             android:gravity="center"
             android:textSize="16dip"
             android:textColor="@color/white"/>

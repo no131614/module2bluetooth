@@ -2,6 +2,7 @@ package ubc.cpen391.testing.loginsignup;
 
 
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -17,7 +18,6 @@ import butterknife.InjectView;
 
 public class SignupActivity extends AppCompatActivity {
     private static final String TAG = "SignupActivity";
-
     private final String SecretKey = "12345";
 
     @InjectView(R.id.input_name) EditText _nameText;
@@ -87,7 +87,9 @@ public class SignupActivity extends AppCompatActivity {
     public void onSignupSuccess() {
         _signupButton.setEnabled(true);
         setResult(RESULT_OK, null);
-        finish();
+        Intent intent = new Intent(getApplicationContext(), SignupFacialRecActivity.class);
+        startActivity(intent);
+        //finish();
     }
 
     public void onSignupFailed() {

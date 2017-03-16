@@ -2,6 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="ubc.cpen391.testing.loginsignup">
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -17,6 +21,8 @@
             </intent-filter>
         </activity>
         <activity android:name=".SignupActivity" android:theme="@style/AppTheme.NoActionBar" />
+        <activity android:name=".SignupFacialRecActivity" android:theme="@style/AppTheme.NoActionBar" />
+
     </application>
 
 </manifest>
