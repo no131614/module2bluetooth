@@ -1,10 +1,16 @@
 package ubc.cpen391.testing.loginsignup;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.provider.Settings;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
+import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.widget.Button;
@@ -18,14 +24,11 @@ import org.json.JSONException;
 
 import java.io.UnsupportedEncodingException;
 
-/**
- * Created by tony1 on 2017-03-16.
- */
-
 public class SignupFacialRecActivity extends Activity {
 
     boolean isEnabled = false;
     static final int REQUEST_IMAGE_CAPTURE = 1;
+    static final int MY_PERMISSIONS_REQUEST_IMAGE_CAPTURE = 2;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -52,7 +55,8 @@ public class SignupFacialRecActivity extends Activity {
         continueButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 if (isEnabled) {
-                    dispatchTakePictureIntent();
+                    displayPermission();
+                    //TODO: Get permission
                 } else {
                     finish();
                 }
@@ -72,32 +76,32 @@ public class SignupFacialRecActivity extends Activity {
         if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
             Bundle extras = data.getExtras();
             Bitmap imageBitmap = (Bitmap) extras.get("data");
-
             KairosListener listener = new KairosListener() {
 
                 @Override
                 public void onSuccess(String response) {
+                    Log.d("KAIROS DEMO", response);
+
                     Toast.makeText(getApplicationContext(), "Image Registration Complete", Toast.LENGTH_SHORT).show();
                     finish();
                 }
 
                 @Override
                 public void onFail(String response) {
+                    Log.d("KAIROS DEMO", response);
                     Toast.makeText(getApplicationContext(), "Image Registration Failed", Toast.LENGTH_SHORT).show();
                     finish();
                 }
             };
 
-
             Kairos myKairos = new Kairos();
 
             String app_id = "524ef96a";
             String api_key = "2b16a2a8590056f57fee7fed1060faf5";
-            myKairos.setAuthentication(this, app_id, api_key);
+            myKairos.setAuthentication(getApplicationContext(), app_id, api_key);
 
             try {
-                //String image = "http://historythings.com/wp-content/uploads/2016/06/SteveJobsBook.jpg";
-                String subjectId = "Alex"; //TODO: input userId from Firebase registration
+                String subjectId = "TestImage"; //TODO: input userId from Firebase registration
                 String galleryId = "RecognitionTesting";
                 myKairos.enroll(imageBitmap, subjectId, galleryId, null, null, null, listener);
 
@@ -107,8 +111,65 @@ public class SignupFacialRecActivity extends Activity {
                 e.printStackTrace();
             }
 
-
         }
     }
+
+    private void displayPermission(){
+        // Here, thisActivity is the current activity
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.CAMERA)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            // Should we show an explanation?
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission.CAMERA)) {
+
+                // Show an explanation to the user *asynchronously* -- don't block
+                // this thread waiting for the user's response! After the user
+                // sees the explanation, try again to request the permission.
+
+            } else {
+
+                // No explanation needed, we can request the permission.
+
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.CAMERA},
+                        MY_PERMISSIONS_REQUEST_IMAGE_CAPTURE);
+
+                // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
+                // app-defined int constant. The callback method gets the
+                // result of the request.
+            }
+        }
+    }
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case MY_PERMISSIONS_REQUEST_IMAGE_CAPTURE: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                    dispatchTakePictureIntent();
+                    // permission was granted, yay! Do the
+                    // contacts-related task you need to do.
+
+                } else {
+                    System.out.println("Permission rejected? WTF");
+                    finish();
+                    // permission denied, boo! Disable the
+                    // functionality that depends on this permission.
+                }
+                return;
+            }
+
+            // other 'case' lines to check for other
+            // permissions this app might request
+        }
+    }
+
+
+
 
 }
