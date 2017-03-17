@@ -110,7 +110,6 @@ public class SignupFacialRecActivity extends Activity {
             } catch (UnsupportedEncodingException e) {
                 e.printStackTrace();
             }
-<<<<<<< HEAD
 
         }
     }
@@ -170,11 +169,4 @@ public class SignupFacialRecActivity extends Activity {
         }
     }
 
-
-
-
-=======
-        }
-    }
->>>>>>> ca1f5318fb315d6bb4cf69170f89af946eef1f55
 }

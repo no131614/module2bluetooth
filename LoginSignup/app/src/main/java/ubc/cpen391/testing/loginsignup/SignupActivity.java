@@ -29,7 +29,7 @@ public class SignupActivity extends AppCompatActivity {
     private FirebaseAuth firebaseAuth;
 
     private final String SecretKey = "12345";
-    private ProgressDialog dialog;
+    //private ProgressDialog dialog;
 
     @InjectView(R.id.input_name) EditText _nameText;
     @InjectView(R.id.input_registrationKey) EditText _registrationKeyText;
@@ -44,7 +44,6 @@ public class SignupActivity extends AppCompatActivity {
         setContentView(R.layout.activity_signup);
         ButterKnife.inject(this);
         firebaseAuth = FirebaseAuth.getInstance();
-        dialog = new ProgressDialog(this);
 
         _signupButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -79,32 +78,21 @@ public class SignupActivity extends AppCompatActivity {
         progressDialog.show();
 
         String name = _nameText.getText().toString();
-        //String registrationKey = _registrationKeyText.getText().toString();
         String password = _passwordText.getText().toString();
 
         // TODO: Implement your own signup logic here.
-        dialog.setMessage("Registering New User...");
-        dialog.show();
+
         firebaseAuth.createUserWithEmailAndPassword(name, password)
                 .addOnCompleteListener(SignupActivity.this, new OnCompleteListener<AuthResult>() {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
-                        dialog.hide();
                         if(task.isSuccessful()) {
                             Toast.makeText(SignupActivity.this, "Registration Successful!", Toast.LENGTH_SHORT).show();
-                            new android.os.Handler().postDelayed(
-                                    new Runnable() {
-                                        public void run() {
-                                            // On complete call either onSignupSuccess or onSignupFailed
-                                            // depending on success
-                                            onSignupSuccess();
-                                            // onSignupFailed();
-                                            progressDialog.dismiss();
-                                        }
-                                    }, 3000);
+                            onSignupSuccess();
                         }
                         else {
                             Toast.makeText(SignupActivity.this, "Registration Failed!", Toast.LENGTH_SHORT).show();
+                            progressDialog.dismiss();
                         }
                     }
                 });

@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">LoginSignup</string>
+    <string name="title_activity_bluetooth_detect">Bluetooth_detect</string>
+    <string name="action_settings">Settings</string>
 </resources>
