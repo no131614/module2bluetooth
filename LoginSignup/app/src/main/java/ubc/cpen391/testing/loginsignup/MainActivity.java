@@ -108,7 +108,6 @@ public class MainActivity extends AppCompatActivity {
                 // TODO: Implement successful signup logic here
                 // By default we just finish the Activity and log them in automatically
                 //this.finish();
-                Toast.makeText(MainActivity.this, "Login Success", Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -121,7 +120,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void onLoginSuccess() {
         _loginButton.setEnabled(true);
-        //finish();
+        finish();
     }
 
     public void onLoginFailed() {
@@ -136,7 +135,7 @@ public class MainActivity extends AppCompatActivity {
         String userId = _userIdText.getText().toString();
         String password = _passwordText.getText().toString();
 
-        if (userId.isEmpty() || !android.util.Patterns.EMAIL_ADDRESS.matcher(userId).matches()) {
+        if (userId.isEmpty()) {
             _userIdText.setError("enter a valid email address");
             valid = false;
         } else {

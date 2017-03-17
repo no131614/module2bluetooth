@@ -4,7 +4,6 @@ package ubc.cpen391.testing.loginsignup;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -14,22 +13,16 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.auth.AuthResult;
-import com.google.firebase.auth.FirebaseAuth;
-
 import butterknife.ButterKnife;
 import butterknife.InjectView;
 
 public class SignupActivity extends AppCompatActivity {
     private static final String TAG = "SignupActivity";
-
-
-    private FirebaseAuth firebaseAuth;
-
     private final String SecretKey = "12345";
+<<<<<<< Updated upstream
     //private ProgressDialog dialog;
+=======
+>>>>>>> Stashed changes
 
     @InjectView(R.id.input_name) EditText _nameText;
     @InjectView(R.id.input_registrationKey) EditText _registrationKeyText;
@@ -43,7 +36,10 @@ public class SignupActivity extends AppCompatActivity {
         this.requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_signup);
         ButterKnife.inject(this);
+<<<<<<< Updated upstream
         firebaseAuth = FirebaseAuth.getInstance();
+=======
+>>>>>>> Stashed changes
 
         _signupButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -78,6 +74,7 @@ public class SignupActivity extends AppCompatActivity {
         progressDialog.show();
 
         String name = _nameText.getText().toString();
+<<<<<<< Updated upstream
         String password = _passwordText.getText().toString();
 
         // TODO: Implement your own signup logic here.
@@ -96,7 +93,23 @@ public class SignupActivity extends AppCompatActivity {
                         }
                     }
                 });
+=======
+        String registrationKey = _registrationKeyText.getText().toString();
+        String password = _passwordText.getText().toString();
 
+        // TODO: Implement your own signup logic here.
+>>>>>>> Stashed changes
+
+        new android.os.Handler().postDelayed(
+                new Runnable() {
+                    public void run() {
+                        // On complete call either onSignupSuccess or onSignupFailed
+                        // depending on success
+                        onSignupSuccess();
+                        // onSignupFailed();
+                        progressDialog.dismiss();
+                    }
+                }, 3000);
     }
 
 
@@ -105,7 +118,7 @@ public class SignupActivity extends AppCompatActivity {
         setResult(RESULT_OK, null);
         Intent intent = new Intent(getApplicationContext(), SignupFacialRecActivity.class);
         startActivity(intent);
-        //finish();
+        finish();
     }
 
     public void onSignupFailed() {
@@ -121,8 +134,8 @@ public class SignupActivity extends AppCompatActivity {
         String registrationKey = _registrationKeyText.getText().toString();
         String password = _passwordText.getText().toString();
 
-        if (name.isEmpty() || !android.util.Patterns.EMAIL_ADDRESS.matcher(name).matches()) {
-            _nameText.setError("invalid email address");
+        if (name.isEmpty() || name.length() < 3) {
+            _nameText.setError("at least 3 characters");
             valid = false;
         } else {
             _nameText.setError(null);
@@ -143,10 +156,5 @@ public class SignupActivity extends AppCompatActivity {
         }
 
         return valid;
-    }
-
-    private boolean isEmailValid(String email) {
-        //TODO: Replace this with your own logic
-        return email.contains("@");
     }
 }

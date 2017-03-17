@@ -2,12 +2,12 @@ package ubc.cpen391.testing.loginsignup;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.provider.MediaStore;
-import android.provider.Settings;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
@@ -29,6 +29,7 @@ public class SignupFacialRecActivity extends Activity {
     boolean isEnabled = false;
     static final int REQUEST_IMAGE_CAPTURE = 1;
     static final int MY_PERMISSIONS_REQUEST_IMAGE_CAPTURE = 2;
+    static ProgressDialog progressDialog;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -39,6 +40,9 @@ public class SignupFacialRecActivity extends Activity {
 
         final Switch enable = (Switch) findViewById(R.id.enableFacialRecSwitch);
         Button continueButton = (Button) findViewById(R.id.btn_continue);
+
+        progressDialog = new ProgressDialog(getApplicationContext(),
+                R.style.AppTheme_Dark_Dialog);
 
         enable.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
@@ -80,17 +84,18 @@ public class SignupFacialRecActivity extends Activity {
 
                 @Override
                 public void onSuccess(String response) {
-                    Log.d("KAIROS DEMO", response);
-
+                    Log.d("KAIROS TESTING", response);
+                    progressDialog.dismiss();
                     Toast.makeText(getApplicationContext(), "Image Registration Complete", Toast.LENGTH_SHORT).show();
                     finish();
                 }
 
                 @Override
                 public void onFail(String response) {
-                    Log.d("KAIROS DEMO", response);
-                    Toast.makeText(getApplicationContext(), "Image Registration Failed", Toast.LENGTH_SHORT).show();
-                    finish();
+                    Log.d("KAIROS TESTING", response);
+                    progressDialog.dismiss();
+                    Toast.makeText(getApplicationContext(), "Image Registration Failed, Please Try Again...", Toast.LENGTH_LONG).show();
+
                 }
             };
 
@@ -141,6 +146,9 @@ public class SignupFacialRecActivity extends Activity {
                 // result of the request.
             }
         }
+        else{
+            dispatchTakePictureIntent();
+        }
     }
     @Override
     public void onRequestPermissionsResult(int requestCode,
@@ -156,6 +164,7 @@ public class SignupFacialRecActivity extends Activity {
                     // contacts-related task you need to do.
 
                 } else {
+                    Toast.makeText(getApplicationContext(), "Camera Permission Revoked", Toast.LENGTH_SHORT).show();
                     System.out.println("Permission rejected? WTF");
                     finish();
                     // permission denied, boo! Disable the
@@ -169,4 +178,10 @@ public class SignupFacialRecActivity extends Activity {
         }
     }
 
+<<<<<<< Updated upstream
+=======
+
+
+
+>>>>>>> Stashed changes
 }
