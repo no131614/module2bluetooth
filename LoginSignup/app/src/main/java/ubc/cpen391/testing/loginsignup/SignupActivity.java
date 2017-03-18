@@ -4,6 +4,7 @@ package ubc.cpen391.testing.loginsignup;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -13,16 +14,18 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.AuthResult;
+import com.google.firebase.auth.FirebaseAuth;
+
 import butterknife.ButterKnife;
 import butterknife.InjectView;
 
 public class SignupActivity extends AppCompatActivity {
     private static final String TAG = "SignupActivity";
     private final String SecretKey = "12345";
-<<<<<<< Updated upstream
-    //private ProgressDialog dialog;
-=======
->>>>>>> Stashed changes
+    private FirebaseAuth firebaseAuth;
 
     @InjectView(R.id.input_name) EditText _nameText;
     @InjectView(R.id.input_registrationKey) EditText _registrationKeyText;
@@ -36,10 +39,8 @@ public class SignupActivity extends AppCompatActivity {
         this.requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_signup);
         ButterKnife.inject(this);
-<<<<<<< Updated upstream
+
         firebaseAuth = FirebaseAuth.getInstance();
-=======
->>>>>>> Stashed changes
 
         _signupButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -74,42 +75,29 @@ public class SignupActivity extends AppCompatActivity {
         progressDialog.show();
 
         String name = _nameText.getText().toString();
-<<<<<<< Updated upstream
+
         String password = _passwordText.getText().toString();
 
         // TODO: Implement your own signup logic here.
 
         firebaseAuth.createUserWithEmailAndPassword(name, password)
                 .addOnCompleteListener(SignupActivity.this, new OnCompleteListener<AuthResult>() {
+
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
+                        progressDialog.dismiss();
                         if(task.isSuccessful()) {
+
                             Toast.makeText(SignupActivity.this, "Registration Successful!", Toast.LENGTH_SHORT).show();
                             onSignupSuccess();
                         }
                         else {
+
                             Toast.makeText(SignupActivity.this, "Registration Failed!", Toast.LENGTH_SHORT).show();
-                            progressDialog.dismiss();
                         }
                     }
                 });
-=======
-        String registrationKey = _registrationKeyText.getText().toString();
-        String password = _passwordText.getText().toString();
 
-        // TODO: Implement your own signup logic here.
->>>>>>> Stashed changes
-
-        new android.os.Handler().postDelayed(
-                new Runnable() {
-                    public void run() {
-                        // On complete call either onSignupSuccess or onSignupFailed
-                        // depending on success
-                        onSignupSuccess();
-                        // onSignupFailed();
-                        progressDialog.dismiss();
-                    }
-                }, 3000);
     }
 
 

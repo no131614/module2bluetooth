@@ -178,10 +178,4 @@ public class SignupFacialRecActivity extends Activity {
         }
     }
 
-<<<<<<< Updated upstream
-=======
-
-
-
->>>>>>> Stashed changes
 }
