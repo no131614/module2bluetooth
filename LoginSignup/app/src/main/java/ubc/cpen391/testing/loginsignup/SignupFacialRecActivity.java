@@ -60,7 +60,6 @@ public class SignupFacialRecActivity extends Activity {
             public void onClick(View v) {
                 if (isEnabled) {
                     displayPermission();
-                    //TODO: Get permission
                 } else {
                     finish();
                 }
@@ -101,12 +100,14 @@ public class SignupFacialRecActivity extends Activity {
 
             Kairos myKairos = new Kairos();
 
+            String id = getIntent().getStringExtra("USER_EMAIL");
             String app_id = "524ef96a";
             String api_key = "2b16a2a8590056f57fee7fed1060faf5";
             myKairos.setAuthentication(getApplicationContext(), app_id, api_key);
 
             try {
-                String subjectId = "TestImage"; //TODO: input userId from Firebase registration
+                System.out.println("Facial Recognition ID:" + id);
+                String subjectId = id;
                 String galleryId = "RecognitionTesting";
                 myKairos.enroll(imageBitmap, subjectId, galleryId, null, null, null, listener);
 
@@ -165,14 +166,13 @@ public class SignupFacialRecActivity extends Activity {
 
                 } else {
                     Toast.makeText(getApplicationContext(), "Camera Permission Revoked", Toast.LENGTH_SHORT).show();
-                    System.out.println("Permission rejected? WTF");
+                    System.out.println("Permission rejected!");
                     finish();
                     // permission denied, boo! Disable the
                     // functionality that depends on this permission.
                 }
                 return;
             }
-
             // other 'case' lines to check for other
             // permissions this app might request
         }

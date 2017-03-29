@@ -1,6 +1,5 @@
 package ubc.cpen391.testing.loginsignup;
 
-
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
@@ -68,8 +67,7 @@ public class SignupActivity extends AppCompatActivity {
 
         _signupButton.setEnabled(false);
 
-        final ProgressDialog progressDialog = new ProgressDialog(SignupActivity.this,
-                R.style.AppTheme_Dark_Dialog);
+        final ProgressDialog progressDialog = new ProgressDialog(SignupActivity.this, R.style.AppTheme_Dark_Dialog);
         progressDialog.setIndeterminate(true);
         progressDialog.setMessage("Creating Account...");
         progressDialog.show();
@@ -94,6 +92,8 @@ public class SignupActivity extends AppCompatActivity {
                         else {
 
                             Toast.makeText(SignupActivity.this, "Registration Failed!", Toast.LENGTH_SHORT).show();
+                            _signupButton.setEnabled(true);
+
                         }
                     }
                 });
@@ -104,7 +104,9 @@ public class SignupActivity extends AppCompatActivity {
     public void onSignupSuccess() {
         _signupButton.setEnabled(true);
         setResult(RESULT_OK, null);
+        String name = _nameText.getText().toString();
         Intent intent = new Intent(getApplicationContext(), SignupFacialRecActivity.class);
+        intent.putExtra("USER_EMAIL", name);
         startActivity(intent);
         finish();
     }
