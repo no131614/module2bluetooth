@@ -8,6 +8,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
@@ -18,6 +19,11 @@ import android.widget.CompoundButton;
 import android.widget.Switch;
 import android.widget.Toast;
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.AuthResult;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.kairos.*;
 
 import org.json.JSONException;
@@ -30,6 +36,7 @@ public class SignupFacialRecActivity extends Activity {
     static final int REQUEST_IMAGE_CAPTURE = 1;
     static final int MY_PERMISSIONS_REQUEST_IMAGE_CAPTURE = 2;
     static ProgressDialog progressDialog;
+    private FirebaseAuth firebaseAuth;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -37,9 +44,11 @@ public class SignupFacialRecActivity extends Activity {
         super.onCreate(savedInstanceState);
         this.requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_signup_facial_rec);
+        firebaseAuth = FirebaseAuth.getInstance();
 
         final Switch enable = (Switch) findViewById(R.id.enableFacialRecSwitch);
-        Button continueButton = (Button) findViewById(R.id.btn_continue);
+        final Button continueButton = (Button) findViewById(R.id.btn_continue);
+        continueButton.setEnabled(false);
 
         progressDialog = new ProgressDialog(getApplicationContext(),
                 R.style.AppTheme_Dark_Dialog);
@@ -54,6 +63,27 @@ public class SignupFacialRecActivity extends Activity {
                 }
             }
         });
+        String email = getIntent().getStringExtra("USER_EMAIL");
+        String password = getIntent().getStringExtra("USER_PASSWORD");
+
+        // TODO: Implement your own authentication logic here.
+        firebaseAuth.signInWithEmailAndPassword(email, password)
+                .addOnCompleteListener(SignupFacialRecActivity.this, new OnCompleteListener<AuthResult>() {
+                    @Override
+                    public void onComplete(@NonNull Task<AuthResult> task) {
+                        if(task.isSuccessful()) {
+                            continueButton.setEnabled(true);
+                            Toast.makeText(SignupFacialRecActivity.this, "Login Success!", Toast.LENGTH_SHORT).show();
+
+
+                        }
+                        else {
+
+                            Toast.makeText(SignupFacialRecActivity.this, "Login Failed!", Toast.LENGTH_SHORT).show();
+
+                        }
+                    }
+                });
 
 
         continueButton.setOnClickListener(new View.OnClickListener() {
@@ -100,7 +130,14 @@ public class SignupFacialRecActivity extends Activity {
 
             Kairos myKairos = new Kairos();
 
-            String id = getIntent().getStringExtra("USER_EMAIL");
+
+            FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+            String id;
+            if (user != null) {
+                id = user.getUid().toString();
+            } else {
+                id = getIntent().getStringExtra("USER_EMAIL");
+            }
             String app_id = "524ef96a";
             String api_key = "2b16a2a8590056f57fee7fed1060faf5";
             myKairos.setAuthentication(getApplicationContext(), app_id, api_key);

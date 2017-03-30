@@ -50,7 +50,6 @@ public class MainActivity extends AppCompatActivity {
     @InjectView(R.id.btn_login_facial) Button _loginButtonFacial;
 
 
-
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -153,7 +152,7 @@ public class MainActivity extends AppCompatActivity {
 
                         JSONObject jObject = new JSONObject(response);
 
-                        //System.out.println(jObject);
+                        System.out.println(jObject);
 
                         JSONArray successJsonArray = jObject.getJSONArray("images");
                         JSONObject successData = successJsonArray.getJSONObject(0);

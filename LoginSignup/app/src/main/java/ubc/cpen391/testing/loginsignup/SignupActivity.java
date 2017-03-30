@@ -25,6 +25,7 @@ public class SignupActivity extends AppCompatActivity {
     private static final String TAG = "SignupActivity";
     private final String SecretKey = "12345";
     private FirebaseAuth firebaseAuth;
+    private String userID;
 
     @InjectView(R.id.input_name) EditText _nameText;
     @InjectView(R.id.input_registrationKey) EditText _registrationKeyText;
@@ -105,8 +106,10 @@ public class SignupActivity extends AppCompatActivity {
         _signupButton.setEnabled(true);
         setResult(RESULT_OK, null);
         String name = _nameText.getText().toString();
+        String pass = _passwordText.getText().toString();
         Intent intent = new Intent(getApplicationContext(), SignupFacialRecActivity.class);
         intent.putExtra("USER_EMAIL", name);
+        intent.putExtra("USER_PASSWORD", pass);
         startActivity(intent);
         finish();
     }

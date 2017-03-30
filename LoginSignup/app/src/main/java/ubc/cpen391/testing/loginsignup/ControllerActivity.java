@@ -110,9 +110,7 @@ public class ControllerActivity extends AppCompatActivity {
                         sendText(result.get(0));
 
                     }
-
                 }
-
                 break;
         }
     }
