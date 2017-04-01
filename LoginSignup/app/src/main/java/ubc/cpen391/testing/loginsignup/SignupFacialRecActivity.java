@@ -37,6 +37,7 @@ public class SignupFacialRecActivity extends Activity {
     static final int MY_PERMISSIONS_REQUEST_IMAGE_CAPTURE = 2;
     static ProgressDialog progressDialog;
     private FirebaseAuth firebaseAuth;
+    private FirebaseUser user;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -80,11 +81,11 @@ public class SignupFacialRecActivity extends Activity {
                         else {
 
                             Toast.makeText(SignupFacialRecActivity.this, "Login Failed!", Toast.LENGTH_SHORT).show();
-
+                            finish();
                         }
                     }
                 });
-
+        user = FirebaseAuth.getInstance().getCurrentUser();
 
         continueButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
@@ -116,6 +117,9 @@ public class SignupFacialRecActivity extends Activity {
                     Log.d("KAIROS TESTING", response);
                     progressDialog.dismiss();
                     Toast.makeText(getApplicationContext(), "Image Registration Complete", Toast.LENGTH_SHORT).show();
+                    Intent intent = new Intent(getApplicationContext(), ControllerActivity.class);
+                    intent.putExtra("user_id", user.getUid());
+                    startActivity(intent);
                     finish();
                 }
 
@@ -131,10 +135,10 @@ public class SignupFacialRecActivity extends Activity {
             Kairos myKairos = new Kairos();
 
 
-            FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+
             String id;
             if (user != null) {
-                id = user.getUid().toString();
+                id = user.getUid();
             } else {
                 id = getIntent().getStringExtra("USER_EMAIL");
             }

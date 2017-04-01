@@ -1,7 +1,7 @@
 package ubc.cpen391.testing.loginsignup;
 
-import android.*;
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.os.Bundle;
@@ -11,10 +11,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
-
-import android.content.Intent;
 import android.view.View;
-import android.view.Window;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -24,6 +21,7 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.kairos.Kairos;
 import com.kairos.KairosListener;
 
@@ -40,6 +38,8 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "LoginActivity";
     private static final int REQUEST_SIGNUP = 0;
     private FirebaseAuth firebaseAuth;
+
+    private FirebaseUser user;
     static final int REQUEST_IMAGE_CAPTURE = 1;
     static final int MY_PERMISSIONS_REQUEST_IMAGE_CAPTURE = 2;
 
@@ -110,7 +110,8 @@ public class MainActivity extends AppCompatActivity {
                         if(task.isSuccessful()) {
                             progressDialog.dismiss();
                             Toast.makeText(MainActivity.this, "Login Success!", Toast.LENGTH_SHORT).show();
-                            onLoginSuccess();
+                            user = firebaseAuth.getCurrentUser();
+                            onLoginSuccess(user.getUid());
                         }
                         else {
                             progressDialog.dismiss();
@@ -132,7 +133,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_SIGNUP) {
             if (resultCode == RESULT_OK) {
-                onLoginSuccess();
+                //onLoginSuccess();
             }
         }
 
@@ -167,7 +168,7 @@ public class MainActivity extends AppCompatActivity {
 
                         if(status.equals("success") && confidence > 0.6) {
                             Toast.makeText(getApplicationContext(), "Image Login Complete", Toast.LENGTH_SHORT).show();
-                            onLoginSuccess();
+                            onLoginSuccess(subjectId);
                         }
 
                         else{
@@ -212,9 +213,10 @@ public class MainActivity extends AppCompatActivity {
         moveTaskToBack(true);
     }
 
-    public void onLoginSuccess() {
+    public void onLoginSuccess(String id) {
         _loginButton.setEnabled(true);
-        Intent intent = new Intent(getApplicationContext(), Bluetooth_detect.class);
+        Intent intent = new Intent(getApplicationContext(), ControllerActivity.class);
+        intent.putExtra("user_id", id);
         startActivity(intent);
     }
 
