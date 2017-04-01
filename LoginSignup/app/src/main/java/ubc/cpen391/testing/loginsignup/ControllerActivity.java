@@ -53,6 +53,7 @@ import com.google.android.gms.maps.model.StreetViewPanoramaLocation;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -133,10 +134,11 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_controller);
 
-        databaseReference = FirebaseDatabase.getInstance().getReference();
+        databaseReference = FirebaseDatabase.getInstance().getReference("Geolocation");
 
         Intent newint = getIntent();
         userid = newint.getStringExtra("user_id"); //receive the address of the bluetooth device
+
 
         schooloc = new Location("school");
         schooloc.setLatitude(school.latitude);
@@ -199,7 +201,7 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
             }
         }
 
-        new ConnectBT().execute(); //Call the class to connect
+     //   new ConnectBT().execute(); //Call the class to connect
 
     }
 
@@ -408,14 +410,18 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
         } else {
             Toast.makeText(getApplicationContext(), "Cannot do this shit", Toast.LENGTH_SHORT).show();
         }
-        initListeners();
+
         ValueEventListener postListener = new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 // Get Post object and use the values to update the UI
 
-                if(dataSnapshot.getValue() != null) {
-                    Toast.makeText(getApplicationContext(), dataSnapshot.getValue().toString(), Toast.LENGTH_LONG).show();
+                for(DataSnapshot ds: dataSnapshot.getChildren()) {
+                    //GPSCoor newcoor = new GPSCoor();
+                    GPSCoor coor = ds.getValue(GPSCoor.class);
+                    mMap.addMarker(new MarkerOptions()
+                            .position(new LatLng(coor.getLatitude(), coor.getLongitude()))
+                            .title("Hello world"));
                 }
 
             }
@@ -427,7 +433,36 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
                 // ...
             }
         };
-        databaseReference.child(userid).addValueEventListener(postListener);
+        databaseReference.addListenerForSingleValueEvent(postListener);
+        /*
+        databaseReference.addChildEventListener(new ChildEventListener() {
+            @Override
+            public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+
+            }
+
+            @Override
+            public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+
+            }
+
+            @Override
+            public void onChildRemoved(DataSnapshot dataSnapshot) {
+
+            }
+
+            @Override
+            public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+        */
+        initListeners();
 
 
 
@@ -479,7 +514,7 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
     public void showAlert() {
         final AlertDialog.Builder dialog = new AlertDialog.Builder(this);
         dialog.setTitle("Enable Location")
-                .setMessage("Your Locations Settings is set to 'Off'.\nPlease Enable Location to " +
+                .setMessage("Your Locations Settings is set to 'Off'.\n Please Enable Location to " +
                         "use this app")
                 .setPositiveButton("Location Settings", new DialogInterface.OnClickListener() {
                     @Override
