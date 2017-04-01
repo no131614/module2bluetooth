@@ -58,6 +58,7 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ServerValue;
 import com.google.firebase.database.ValueEventListener;
 
 import java.io.IOException;
@@ -434,11 +435,14 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
             }
         };
         databaseReference.addListenerForSingleValueEvent(postListener);
-        /*
+
         databaseReference.addChildEventListener(new ChildEventListener() {
             @Override
             public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-
+                GPSCoor coor = dataSnapshot.getValue(GPSCoor.class);
+                mMap.addMarker(new MarkerOptions()
+                        .position(new LatLng(coor.getLatitude(), coor.getLongitude()))
+                        .title(coor.getUid()));
             }
 
             @Override
@@ -461,7 +465,7 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
 
             }
         });
-        */
+
         initListeners();
 
 
@@ -587,6 +591,15 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
                     else if (result.get(0).equals("Vancouver")) {
                         initCamera(city);
                         svp.setPosition(vancouver);
+
+                    }
+
+                    else if (result.get(0).equals("alert")) {
+                        if(mLastLocation != null && databaseReference != null) {
+                            GPSCoor newcoor = new GPSCoor(mLastLocation.getLatitude(), mLastLocation.getLongitude(), 100, userid);
+                            databaseReference.push().setValue(newcoor);
+
+                        }
 
                     }
                     else {
