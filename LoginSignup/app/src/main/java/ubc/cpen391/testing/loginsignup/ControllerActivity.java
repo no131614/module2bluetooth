@@ -1,6 +1,7 @@
 package ubc.cpen391.testing.loginsignup;
 
 import android.Manifest;
+import android.app.ActionBar;
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -19,17 +20,22 @@ import android.os.AsyncTask;
 import android.provider.Settings;
 import android.speech.RecognizerIntent;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
+import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.SeekBar;
 import android.widget.Toast;
@@ -58,7 +64,6 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ServerValue;
 import com.google.firebase.database.ValueEventListener;
 
 import java.io.IOException;
@@ -128,15 +133,21 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
     private FirebaseUser user;
     private DatabaseReference databaseReference;
 
+    private android.app.FragmentManager fm;
+    private BluetoothFragment bdevice;
+    private Button connectButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        this.requestWindowFeature(Window.FEATURE_NO_TITLE);
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_controller);
+        connectButton = (Button) findViewById(R.id.devices);
 
         databaseReference = FirebaseDatabase.getInstance().getReference("Geolocation");
 
+        fm = getFragmentManager();
+        bdevice = new BluetoothFragment();
         Intent newint = getIntent();
         userid = newint.getStringExtra("user_id"); //receive the address of the bluetooth device
 
@@ -172,10 +183,35 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
         SupportStreetViewPanoramaFragment streetFragment = (SupportStreetViewPanoramaFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.streetviewpanorama);
         streetFragment.getStreetViewPanoramaAsync(this);
+    }
 
-        //-------------------------------------------------bluetooth part--------------------------------------
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.popup_menu, menu);
+        return true;
 
+    }
 
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if(mMap != null) {
+            if (item.getTitle().equals("Satellite")) {
+                mMap.setMapType(MAP_TYPES[0]);
+            }
+            else if (item.getTitle().equals("Normal")) {
+                mMap.setMapType(MAP_TYPES[1]);
+            }
+            else if (item.getTitle().equals("Hybrid")) {
+                mMap.setMapType(MAP_TYPES[2]);
+            }
+            else if (item.getTitle().equals("Terrain")) {
+                mMap.setMapType(MAP_TYPES[3]);
+            }
+            else {
+                mMap.setMapType(MAP_TYPES[4]);
+            }
+        }
+        return super.onOptionsItemSelected(item);
     }
 
 
@@ -187,7 +223,7 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
             Toast.makeText(getApplicationContext(), "Bluetooth Device Not Available", Toast.LENGTH_LONG).show();
 
             //close the app
-            finish();
+            return;
         } else if (!myBluetooth.isEnabled()) {
             //Ask to the user turn on the bluetooth on the device
             Intent turnBTon = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
@@ -204,6 +240,11 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
 
      //   new ConnectBT().execute(); //Call the class to connect
 
+    }
+
+    public void connectBluetooth(String s) {
+        address = s;
+        new ConnectBT().execute();
     }
 
     @Override
@@ -264,6 +305,7 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
         }
         //sendText("logout" + "\0\n");
         Disconnect();
+        finish();
     }
 
 
@@ -409,7 +451,7 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
                 == PackageManager.PERMISSION_GRANTED) {
             mMap.setMyLocationEnabled(true);
         } else {
-            Toast.makeText(getApplicationContext(), "Cannot do this shit", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getApplicationContext(), "Please turn on Location Permissions in Settings", Toast.LENGTH_SHORT).show();
         }
 
         ValueEventListener postListener = new ValueEventListener() {
@@ -467,9 +509,6 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
         });
 
         initListeners();
-
-
-
     }
 
     private void initCamera(Location location) {
@@ -488,17 +527,26 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
     }
 
     public void changeToSat(View view) {
+        /*
         if (!ready) {
             return;
         }
         mMap.setMapType(MAP_TYPES[0]);
+        */
+        if(!isBtConnected) {
+            bdevice.show(fm, "bluetooth");
+        }
+        else {
+            msg("Phone is already connected!");
+        }
     }
 
     public void changeToNorm(View view) {
-        if (!ready) {
-            return;
+        if(mLastLocation != null && databaseReference != null) {
+            GPSCoor newcoor = new GPSCoor(mLastLocation.getLatitude(), mLastLocation.getLongitude(), 100, userid);
+            databaseReference.push().setValue(newcoor);
+
         }
-        mMap.setMapType(MAP_TYPES[1]);
     }
 
     public void changeToTer(View view) {
@@ -633,6 +681,8 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
     }
 
 
+
+
     //The purpose of this class is to create and maintain the bluetooth connection
     private class ConnectBT extends AsyncTask<Void, Void, Void>  // UI thread
     {
@@ -662,6 +712,7 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
             {
                 e.printStackTrace();
                 ConnectSuccess = false;//If the try failed, you can check the exception here
+
             }
             return null;
         }
@@ -678,8 +729,9 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
             else
             {
                 msg("Connected.");
-                sendText(userid + "\0\n");
                 isBtConnected = true;
+                sendText(userid + "\0\n");
+
             }
             progress.dismiss();
         }
@@ -693,18 +745,20 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
             try
             {
                 btSocket.close(); //close connection
+                msg("Successfully Disconnected");
             }
             catch (IOException e)
-            { msg("Error");}
+            {
+                e.printStackTrace();
+                msg("Error Disconnecting");
+            }
         }
-        msg("Successfully Disconnected");
-        finish();
     }
 
     //Method to display a Toast
     public void msg(String s)
     {
-        Toast.makeText(getApplicationContext(), s, Toast.LENGTH_LONG).show();
+        Toast.makeText(getApplicationContext(), s, Toast.LENGTH_SHORT).show();
     }
 
     //Function to send the text to DE1-Soc
@@ -715,25 +769,29 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
             try
             {
                 msg("Sending");
-                btSocket.getOutputStream().write(s.toString().getBytes());
+                btSocket.getOutputStream().write(s.getBytes());
             }
             catch (IOException e)
             {
 
 
                 e.printStackTrace();
-                /*
+
                 msg("Connection Error");
                 isBtConnected = false;
-                msg("Trying to reestablished connection");
+                //msg("Trying to reestablished connection");
+
                 try
                 {
                     btSocket.close(); //close connection
                 }
                 catch (IOException ei)
-                { msg("CANNOT DISMISS");}
-                new ConnectBT().execute();
-                */
+                {
+                    ei.printStackTrace();
+                    msg("CANNOT DISMISS");
+                }
+                //new ConnectBT().execute();
+
             }
         }
 
@@ -762,9 +820,8 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
     }
     @Override
     public void onBackPressed() {
-        super.onBackPressed();
         Disconnect();
-        return;
+        super.onBackPressed();
     }
 
 }

@@ -56,7 +56,7 @@
             android:theme="@style/AppTheme.NoActionBar"/>
         <activity
             android:name=".ControllerActivity"
-            android:theme="@style/AppTheme.NoActionBar"/>
+            android:theme="@style/AppTheme"/>
     </application>
 
 </manifest>
