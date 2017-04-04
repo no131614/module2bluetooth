@@ -20,8 +20,9 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:background="@color/trailSecGreen"
     xmlns:tools="http://schemas.android.com/tools"
-    android:orientation="vertical"
-    tools:context="com.example.james.exercise4.MapsActivity">
+    android:screenOrientation="portrait"
+    tools:context="ubc.cpen391.testing.loginsignup.ControllerActivity"
+    android:orientation="vertical">
 
     <fragment
         android:id="@+id/map"
@@ -117,7 +118,7 @@
             android:layout_height="wrap_content"
             android:onClick="changeToNorm"
             android:layout_weight="0.5"
-            android:text="Normal"/>
+            android:text="Alert"/>
         <Button
             android:id="@+id/terrain"
             android:layout_width="0dp"

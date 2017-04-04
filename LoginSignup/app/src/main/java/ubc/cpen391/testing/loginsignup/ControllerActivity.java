@@ -112,7 +112,7 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
     private GoogleMap mMap;
     private StreetViewPanorama svp;
 
-    private boolean ready;
+    private boolean ready = false;
     private boolean first = true;
 
     private final int[] MAP_TYPES = {
@@ -284,6 +284,8 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
         if (mGoogleApiClient != null && mGoogleApiClient.isConnected()) {
             mGoogleApiClient.disconnect();
         }
+
+        Disconnect();
     }
 
     @Override
@@ -410,7 +412,6 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
             // to handle the case where the user grants the permission. See the documentation
             // for ActivityCompat#requestPermissions for more details.
             msg("Please turn on Location Permissions in Settings");
-            showAlert();
             return;
         }
         mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
@@ -508,10 +509,7 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
                 // Get Post object and use the values to update the UI
 
                 for(DataSnapshot ds: dataSnapshot.getChildren()) {
-                    //GPSCoor newcoor = new GPSCoor();
                     GPSCoor coor = ds.getValue(GPSCoor.class);
-                    //SimpleDateFormat sfd = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
-                    //sfd.format(new Date(coor.getTimestampCreatedLong()));
                     mMap.addMarker(new MarkerOptions()
                             .position(new LatLng(coor.getLatitude(), coor.getLongitude()))
                             .title(coor.getImage()));
@@ -521,9 +519,7 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
 
             @Override
             public void onCancelled(DatabaseError databaseError) {
-                // Getting Post failed, log a message
-                //Log.w(TAG, "loadPost:onCancelled", databaseError.toException());
-                // ...
+                msg("Error connecting to database");
             }
         };
         databaseReference.addListenerForSingleValueEvent(postListener);
@@ -556,7 +552,7 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
 
             @Override
             public void onCancelled(DatabaseError databaseError) {
-
+                msg("Error connecting to database");
             }
         });
 
@@ -579,12 +575,6 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
     }
 
     public void changeToSat(View view) {
-        /*
-        if (!ready) {
-            return;
-        }
-        mMap.setMapType(MAP_TYPES[0]);
-        */
         if(!isBtConnected) {
             bdevice.show(fm, "bluetooth");
         }
@@ -595,11 +585,20 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
 
     public void changeToNorm(View view) {
         if(mLastLocation != null && databaseReference != null) {
-
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                // TODO: Consider calling
+                //    ActivityCompat#requestPermissions
+                // here to request the missing permissions, and then overriding
+                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                //                                          int[] grantResults)
+                // to handle the case where the user grants the permission. See the documentation
+                // for ActivityCompat#requestPermissions for more details.
+                msg("Please turn on Camera Permissions in Settings");
+                return;
+            }
             Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
 
             startActivityForResult(intent, CAMERA_REQUEST_CODE);
-
         }
     }
 
@@ -822,6 +821,7 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
             {
                 btSocket.close(); //close connection
                 msg("Successfully Disconnected");
+                isBtConnected = false;
             }
             catch (IOException e)
             {

@@ -28,13 +28,6 @@ public class GPSCoor {
         this.image = image;
     }
 
-    /*
-    public HashMap<String, Object> getTimestampCreated(){
-        return timestampCreated;
-    }
-*/
-
-
 
     public Double getLatitude() {
         return this.latitude;
@@ -43,22 +36,13 @@ public class GPSCoor {
     public Double getLongitude() {
         return this.longitude;
     }
-/*
-    public HashMap<String, Object> getTimestampCreated(){
-        return timestampCreated;
-    }
 
-    @Exclude
-    public long getTimestampCreatedLong(){
-        return (long) timestampCreated.get("timestamp");
-    }
-*/
-    public Object getTimestampCreated(){
+    public Object getTimestamp(){
         return this.timestamp;
     }
 
     @Exclude
-    public long getTimestampCreatedLong(){
+    public long getTimestampLong(){
         return (long) this.timestamp;
     }
 
