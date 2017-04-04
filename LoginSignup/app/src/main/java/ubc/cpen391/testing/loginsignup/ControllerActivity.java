@@ -2,6 +2,8 @@ package ubc.cpen391.testing.loginsignup;
 
 import android.Manifest;
 import android.app.ActionBar;
+import android.app.Fragment;
+import android.app.FragmentTransaction;
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -16,7 +18,9 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.os.AsyncTask;
+import android.provider.MediaStore;
 import android.provider.Settings;
 import android.speech.RecognizerIntent;
 import android.support.annotation.NonNull;
@@ -30,6 +34,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -37,6 +42,7 @@ import android.view.View;
 import android.view.Window;
 import android.widget.Button;
 import android.widget.CompoundButton;
+import android.widget.PopupWindow;
 import android.widget.SeekBar;
 import android.widget.Toast;
 
@@ -57,6 +63,7 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.StreetViewPanoramaLocation;
 
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.ChildEventListener;
@@ -64,12 +71,18 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ServerValue;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 
 import java.io.IOException;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
@@ -132,10 +145,18 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
     private FirebaseAuth firebaseAuth;
     private FirebaseUser user;
     private DatabaseReference databaseReference;
+    private StorageReference mStorage;
 
     private android.app.FragmentManager fm;
     private BluetoothFragment bdevice;
+    private ImageFragment imageFragment;
     private Button connectButton;
+
+    private PopupWindow window;
+    private LayoutInflater inflater;
+
+    private static final int GALLERY_INTENT = 2;
+    private static final int CAMERA_REQUEST_CODE = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -145,9 +166,11 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
         connectButton = (Button) findViewById(R.id.devices);
 
         databaseReference = FirebaseDatabase.getInstance().getReference("Geolocation");
+        mStorage = FirebaseStorage.getInstance().getReference();
 
         fm = getFragmentManager();
         bdevice = new BluetoothFragment();
+        imageFragment = new ImageFragment();
         Intent newint = getIntent();
         userid = newint.getStringExtra("user_id"); //receive the address of the bluetooth device
 
@@ -439,7 +462,21 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
     @Override
     public boolean onMarkerClick(Marker marker) {
         marker.showInfoWindow();
+        showWindow(marker.getTitle());
         return true;
+    }
+
+    public void showWindow(String s) {
+        FragmentTransaction ft = getFragmentManager().beginTransaction();
+        Fragment prev = getFragmentManager().findFragmentByTag("dialog");
+        if (prev != null) {
+            ft.remove(prev);
+        }
+        ft.addToBackStack(null);
+
+        // Create and show the dialog.
+        ImageFragment newFragment = ImageFragment.newInstance(s);
+        newFragment.show(ft, "dialog");
     }
 
     @Override
@@ -462,9 +499,11 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
                 for(DataSnapshot ds: dataSnapshot.getChildren()) {
                     //GPSCoor newcoor = new GPSCoor();
                     GPSCoor coor = ds.getValue(GPSCoor.class);
+                    //SimpleDateFormat sfd = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+                    //sfd.format(new Date(coor.getTimestampCreatedLong()));
                     mMap.addMarker(new MarkerOptions()
                             .position(new LatLng(coor.getLatitude(), coor.getLongitude()))
-                            .title("Hello world"));
+                            .title(coor.getImage()));
                 }
 
             }
@@ -482,9 +521,11 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
             @Override
             public void onChildAdded(DataSnapshot dataSnapshot, String s) {
                 GPSCoor coor = dataSnapshot.getValue(GPSCoor.class);
+               // SimpleDateFormat sfd = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+                //sfd.format(new Date(coor.getTimestampCreatedLong()));
                 mMap.addMarker(new MarkerOptions()
                         .position(new LatLng(coor.getLatitude(), coor.getLongitude()))
-                        .title(coor.getUid()));
+                        .title(coor.getImage()));
             }
 
             @Override
@@ -543,8 +584,10 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
 
     public void changeToNorm(View view) {
         if(mLastLocation != null && databaseReference != null) {
-            GPSCoor newcoor = new GPSCoor(mLastLocation.getLatitude(), mLastLocation.getLongitude(), 100, userid);
-            databaseReference.push().setValue(newcoor);
+
+            Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+
+            startActivityForResult(intent, CAMERA_REQUEST_CODE);
 
         }
     }
@@ -641,21 +684,43 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
                         svp.setPosition(vancouver);
 
                     }
-
+                    /*
                     else if (result.get(0).equals("alert")) {
                         if(mLastLocation != null && databaseReference != null) {
-                            GPSCoor newcoor = new GPSCoor(mLastLocation.getLatitude(), mLastLocation.getLongitude(), 100, userid);
+                            GPSCoor newcoor = new GPSCoor(mLastLocation.getLatitude(), mLastLocation.getLongitude(), userid);
                             databaseReference.push().setValue(newcoor);
 
                         }
 
                     }
+
+                    */
                     else {
 
                         Toast.makeText(getApplicationContext(), result.get(0), Toast.LENGTH_SHORT).show();
                     }
 
                 }
+
+                break;
+
+
+            case CAMERA_REQUEST_CODE:
+                if(result_code == RESULT_OK) {
+                    Uri uri = i.getData();
+
+                    StorageReference filepath = mStorage.child("Security").child(uri.getLastPathSegment());
+                    filepath.putFile(uri).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+                        @Override
+                        public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                            Uri downloadUri = taskSnapshot.getDownloadUrl();
+                            GPSCoor newcoor = new GPSCoor(mLastLocation.getLatitude(), mLastLocation.getLongitude(), userid, downloadUri.toString());
+                            databaseReference.push().setValue(newcoor);
+                            msg("File successfully uploaded");
+                        }
+                    });
+                }
+
                 break;
         }
     }
