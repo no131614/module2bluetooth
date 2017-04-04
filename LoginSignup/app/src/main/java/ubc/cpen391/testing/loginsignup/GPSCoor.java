@@ -12,7 +12,7 @@ public class GPSCoor {
 
     private Double latitude;
     private Double longitude;
-    private Object timestampCreated;
+    private Object timestamp;
     private String uid;
     private String image;
 
@@ -23,7 +23,7 @@ public class GPSCoor {
     public GPSCoor(Double latitude, Double longitude, String id, String image) {
         this.latitude = latitude;
         this.longitude = longitude;
-        timestampCreated = ServerValue.TIMESTAMP;
+        timestamp = ServerValue.TIMESTAMP;
         this.uid = id;
         this.image = image;
     }
@@ -54,12 +54,12 @@ public class GPSCoor {
     }
 */
     public Object getTimestampCreated(){
-        return this.timestampCreated;
+        return this.timestamp;
     }
 
     @Exclude
     public long getTimestampCreatedLong(){
-        return (long) this.timestampCreated;
+        return (long) this.timestamp;
     }
 
     public String getUid() {

@@ -450,6 +450,21 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
     @Override
     public void onInfoWindowClick(Marker marker) {
 
+        if(marker.getTitle() != null) {
+            FragmentTransaction ft = getFragmentManager().beginTransaction();
+            Fragment prev = getFragmentManager().findFragmentByTag("dialog");
+
+
+            if (prev != null) {
+                ft.remove(prev);
+            }
+            ft.addToBackStack(null);
+
+            // Create and show the dialog.
+            ImageFragment newFragment = ImageFragment.newInstance(marker.getTitle());
+            newFragment.show(ft, "dialog");
+        }
+
     }
 
 
@@ -462,21 +477,17 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
     @Override
     public boolean onMarkerClick(Marker marker) {
         marker.showInfoWindow();
+        Location mark = new Location("marker");
+        mark.setLatitude(marker.getPosition().latitude);
+        mark.setLongitude(marker.getPosition().longitude);
+        initCamera(mark);
         showWindow(marker.getTitle());
         return true;
     }
 
     public void showWindow(String s) {
-        FragmentTransaction ft = getFragmentManager().beginTransaction();
-        Fragment prev = getFragmentManager().findFragmentByTag("dialog");
-        if (prev != null) {
-            ft.remove(prev);
-        }
-        ft.addToBackStack(null);
 
-        // Create and show the dialog.
-        ImageFragment newFragment = ImageFragment.newInstance(s);
-        newFragment.show(ft, "dialog");
+
     }
 
     @Override
