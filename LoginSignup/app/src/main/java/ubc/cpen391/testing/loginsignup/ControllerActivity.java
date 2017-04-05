@@ -32,6 +32,7 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.FloatMath;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -61,6 +62,8 @@ import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.StreetViewPanoramaCamera;
+import com.google.android.gms.maps.model.StreetViewPanoramaLink;
 import com.google.android.gms.maps.model.StreetViewPanoramaLocation;
 
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -157,6 +160,11 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
 
     private static final int GALLERY_INTENT = 2;
     private static final int CAMERA_REQUEST_CODE = 1;
+
+    private static final int PAN_BY_DEG = 30;
+
+    private static final float ZOOM_BY = 0.5f;
+    private static final long DEFAULT_ANIMATION_DURATION = 1000;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -343,44 +351,65 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
      * Called when the left arrow button is clicked. This causes the camera to move to the left
      */
     public void onScrollLeft(View view) {
-        if (!checkReady()) {
-            return;
-        }
 
-        changeCamera(CameraUpdateFactory.scrollBy(-SCROLL_BY_PX, 0));
+        if(svp != null) {
+            svp.animateTo(
+                    new StreetViewPanoramaCamera.Builder().zoom(svp.getPanoramaCamera().zoom)
+                            .tilt(svp.getPanoramaCamera().tilt)
+                            .bearing(svp.getPanoramaCamera().bearing - PAN_BY_DEG).build(), getDuration());
+        }
     }
 
     /**
      * Called when the right arrow button is clicked. This causes the camera to move to the right.
      */
     public void onScrollRight(View view) {
-        if (!checkReady()) {
-            return;
+        if(svp != null) {
+            svp.animateTo(
+                    new StreetViewPanoramaCamera.Builder().zoom(svp.getPanoramaCamera().zoom)
+                            .tilt(svp.getPanoramaCamera().tilt)
+                            .bearing(svp.getPanoramaCamera().bearing + PAN_BY_DEG).build(), getDuration());
         }
-
-        changeCamera(CameraUpdateFactory.scrollBy(SCROLL_BY_PX, 0));
     }
 
     /**
      * Called when the up arrow button is clicked. The causes the camera to move up.
      */
     public void onScrollUp(View view) {
-        if (!checkReady()) {
-            return;
-        }
+        if(svp != null) {
+            float currentTilt = svp.getPanoramaCamera().tilt;
+            float newTilt = currentTilt + PAN_BY_DEG;
 
-        changeCamera(CameraUpdateFactory.scrollBy(0, -SCROLL_BY_PX));
+            newTilt = (newTilt > 90) ? 90 : newTilt;
+
+            svp.animateTo(
+                    new StreetViewPanoramaCamera.Builder().zoom(svp.getPanoramaCamera().zoom)
+                            .tilt(newTilt)
+                            .bearing(svp.getPanoramaCamera().bearing).build(), getDuration());
+        }
     }
 
     /**
      * Called when the down arrow button is clicked. This causes the camera to move down.
      */
     public void onScrollDown(View view) {
-        if (!checkReady()) {
-            return;
+
+        if(svp != null) {
+            float currentTilt = svp.getPanoramaCamera().tilt;
+            float newTilt = currentTilt - PAN_BY_DEG;
+
+            newTilt = (newTilt < -90) ? -90 : newTilt;
+
+            svp.animateTo(
+                    new StreetViewPanoramaCamera.Builder().zoom(svp.getPanoramaCamera().zoom)
+                            .tilt(newTilt)
+                            .bearing(svp.getPanoramaCamera().bearing).build(), getDuration());
         }
 
-        changeCamera(CameraUpdateFactory.scrollBy(0, SCROLL_BY_PX));
+    }
+
+    private long getDuration() {
+        return DEFAULT_ANIMATION_DURATION;
     }
 
     /**
@@ -603,10 +632,14 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
     }
 
     public void changeToTer(View view) {
-        if (!ready) {
-            return;
+        if(svp != null) {
+            StreetViewPanoramaLocation location = svp.getLocation();
+            StreetViewPanoramaCamera camera = svp.getPanoramaCamera();
+            if (location != null && location.links != null) {
+                StreetViewPanoramaLink link = findClosestLinkToBearing(location.links, camera.bearing);
+                svp.setPosition(link.panoId);
+            }
         }
-        mMap.setMapType(MAP_TYPES[3]);
     }
 
     public void changeToHyb(View view) {
@@ -614,6 +647,26 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
             return;
         }
         mMap.setMapType(MAP_TYPES[2]);
+    }
+
+    public static StreetViewPanoramaLink findClosestLinkToBearing(StreetViewPanoramaLink[] links,
+                                                                  float bearing) {
+        float minBearingDiff = 360;
+        StreetViewPanoramaLink closestLink = links[0];
+        for (StreetViewPanoramaLink link : links) {
+            if (minBearingDiff > findNormalizedDifference(bearing, link.bearing)) {
+                minBearingDiff = findNormalizedDifference(bearing, link.bearing);
+                closestLink = link;
+            }
+        }
+        return closestLink;
+    }
+
+    // Find the difference between angle a and b as a value between 0 and 180
+    public static float findNormalizedDifference(float a, float b) {
+        float diff = a - b;
+        float normalizedDiff = (float) (diff - (360.0f * Math.floor(diff / 360.0f)));
+        return (normalizedDiff < 180.0f) ? normalizedDiff : 360.0f - normalizedDiff;
     }
 
     public void showAlert() {
@@ -800,6 +853,7 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
             if (!ConnectSuccess)
             {
                 msg("Connection Failed. Please try again.");
+                isBtConnected = false;
             }
             else
             {
@@ -853,7 +907,7 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
 
                 e.printStackTrace();
 
-                msg("Connection Error");
+                msg("Connection Error. Please Reconnect Bluetooth");
                 isBtConnected = false;
                 //msg("Trying to reestablished connection");
 

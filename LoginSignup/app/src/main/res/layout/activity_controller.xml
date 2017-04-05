@@ -112,6 +112,14 @@
             android:onClick="changeToSat"
             android:layout_weight="0.5"
             android:text="Devices"/>
+
+        <Button
+            android:id="@+id/terrain"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:onClick="changeToTer"
+            android:layout_weight="0.5"
+            android:text="Walk"/>
         <Button
             android:id="@+id/normal"
             android:layout_width="0dp"
@@ -119,13 +127,7 @@
             android:onClick="changeToNorm"
             android:layout_weight="0.5"
             android:text="Alert"/>
-        <Button
-            android:id="@+id/terrain"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:onClick="changeToTer"
-            android:layout_weight="0.5"
-            android:text="Terrain"/>
+
         <Button
             android:id="@+id/hybrid"
             android:layout_width="0dp"
