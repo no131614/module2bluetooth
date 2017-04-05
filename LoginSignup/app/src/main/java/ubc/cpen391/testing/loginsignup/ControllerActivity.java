@@ -12,6 +12,7 @@ import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.location.Geocoder;
 import android.location.Location;
@@ -176,6 +177,8 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
         databaseReference = FirebaseDatabase.getInstance().getReference("Geolocation");
         mStorage = FirebaseStorage.getInstance().getReference();
 
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+
         fm = getFragmentManager();
         bdevice = new BluetoothFragment();
         imageFragment = new ImageFragment();
@@ -325,6 +328,7 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
         if (mLastLocation != null) {
             //Toast.makeText(getApplicationContext(), mLastLocation.getLatitude() + " " + mLastLocation.getLongitude(), Toast.LENGTH_SHORT).show();
             initCamera(mLastLocation);
+
         }
         svp.setPosition(ubc);
     }
@@ -447,7 +451,7 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
         if (mLastLocation != null) {
             //Toast.makeText(getApplicationContext(), mLastLocation.getLatitude() + " " + mLastLocation.getLongitude(), Toast.LENGTH_SHORT).show();
             if(first) {
-                initCamera(mLastLocation);
+                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude()), 16));
                 first = false;
             }
             if(mLastLocation != null && isNetworkAvailable()) {
@@ -592,7 +596,7 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
         CameraPosition position = CameraPosition.builder()
                 .target(new LatLng(location.getLatitude(),
                         location.getLongitude()))
-                .zoom(16)
+                .zoom(17)
                 .bearing(0.0f)
                 .tilt(0.0f)
                 .build();
@@ -770,8 +774,9 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
 
             case CAMERA_REQUEST_CODE:
                 if(result_code == RESULT_OK) {
-                    Uri uri = i.getData();
 
+                    progress = ProgressDialog.show(ControllerActivity.this, "Uploading Image...", "Please Wait");  //Show a progress dialog
+                    Uri uri = i.getData();
                     StorageReference filepath = mStorage.child("Security").child(uri.getLastPathSegment());
                     filepath.putFile(uri).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
                         @Override
@@ -779,6 +784,7 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
                             Uri downloadUri = taskSnapshot.getDownloadUrl();
                             GPSCoor newcoor = new GPSCoor(mLastLocation.getLatitude(), mLastLocation.getLongitude(), userid, downloadUri.toString());
                             databaseReference.push().setValue(newcoor);
+                            progress.dismiss();
                             msg("File successfully uploaded");
                         }
                     });

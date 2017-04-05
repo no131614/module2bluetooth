@@ -49,7 +49,6 @@ public class MainActivity extends AppCompatActivity {
     @InjectView(R.id.link_signup) TextView _signupLink;
     @InjectView(R.id.btn_login_facial) Button _loginButtonFacial;
 
-
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
