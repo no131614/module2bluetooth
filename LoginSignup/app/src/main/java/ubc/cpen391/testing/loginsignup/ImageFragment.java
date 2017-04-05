@@ -44,7 +44,7 @@ public class ImageFragment extends DialogFragment{
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.image_marker, container, false);
         ImageView image = (ImageView) rootView.findViewById(R.id.imageView);
-        Picasso.with(getActivity()).load(uri).fit().centerCrop().into(image);
+        Picasso.with(getActivity()).load(uri).rotate(-90).fit().into(image);
 
         Button button = (Button)rootView.findViewById(R.id.button);
         button.setOnClickListener(new View.OnClickListener() {
