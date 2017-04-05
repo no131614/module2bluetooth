@@ -139,6 +139,14 @@ public class MainActivity extends AppCompatActivity {
         else if(requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
             Bundle extras = data.getExtras();
             Bitmap imageBitmap = (Bitmap) extras.get("data");
+
+            final ProgressDialog progressDialog = new ProgressDialog(MainActivity.this,
+                    R.style.AppTheme_Dark_Dialog);
+            progressDialog.setIndeterminate(true);
+            progressDialog.setMessage("Authenticating Image...");
+            progressDialog.show();
+
+
             KairosListener listenerLogin = new KairosListener() {
 
                 String status = "";
@@ -149,32 +157,46 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onSuccess(String response) {
                     try {
-
+                        boolean stop = false;
                         JSONObject jObject = new JSONObject(response);
 
                         System.out.println(jObject);
 
-                        JSONArray successJsonArray = jObject.getJSONArray("images");
-                        JSONObject successData = successJsonArray.getJSONObject(0);
-                        JSONObject data = successData.getJSONObject("transaction");
-
-                        status = data.getString("status");
-                        galleryName = data.getString("gallery_name");
-                        subjectId = data.getString("subject_id");
-                        confidence = data.getDouble("confidence");
-
-                        System.out.println("Status: " + status + " ,Gallery Name: " + galleryName + " ,Subject Id: " + galleryName + " ,Confidence: " + confidence);
-
-                        if(status.equals("success") && confidence > 0.6) {
-                            Toast.makeText(getApplicationContext(), "Image Login Complete", Toast.LENGTH_SHORT).show();
-                            onLoginSuccess(subjectId);
+                        try {
+                            JSONArray errorsJson = jObject.getJSONArray("Errors");
+                            stop = true;
+                            JSONObject successErrorData = errorsJson.getJSONObject(0);
+                            String error = successErrorData.getString("Message");
+                            String finalError = error.substring(0, 1).toUpperCase() + error.substring(1);
+                            Toast.makeText(getApplicationContext(), finalError, Toast.LENGTH_LONG).show();
+                            progressDialog.dismiss();
                         }
+                        catch (JSONException ignored) {}
 
-                        else{
-                            onLoginFailed();
+                        if (!stop) {
+                            JSONArray successJsonArray = jObject.getJSONArray("images");
+                            JSONObject successData = successJsonArray.getJSONObject(0);
+                            JSONObject data = successData.getJSONObject("transaction");
+
+                            status = data.getString("status");
+                            galleryName = data.getString("gallery_name");
+                            subjectId = data.getString("subject_id");
+                            confidence = data.getDouble("confidence");
+
+                            System.out.println("Status: " + status + " ,Gallery Name: " + galleryName + " ,Subject Id: " + galleryName + " ,Confidence: " + confidence);
+
+                            if (status.equals("success") && confidence > 0.6) {
+                                Toast.makeText(getApplicationContext(), "Image Login Complete", Toast.LENGTH_SHORT).show();
+                                progressDialog.dismiss();
+                                onLoginSuccess(subjectId);
+                            } else {
+                                progressDialog.dismiss();
+                                onLoginFailed();
+                            }
                         }
                     }
                     catch(JSONException e){
+                        progressDialog.dismiss();
                         e.printStackTrace();
                     }
                 }
@@ -182,6 +204,7 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onFail(String response) {
                     Log.d("KAIROS TESTING", response);
+                    progressDialog.dismiss();
                     Toast.makeText(getApplicationContext(), "Image Login Failed, Please Try Again...", Toast.LENGTH_LONG).show();
                 }
             };
@@ -198,8 +221,10 @@ public class MainActivity extends AppCompatActivity {
                 myKairos.recognize(imageBitmap, galleryId, null, null, null, null, listenerLogin);
 
             } catch (JSONException e) {
+                progressDialog.dismiss();
                 e.printStackTrace();
             } catch (UnsupportedEncodingException e) {
+                progressDialog.dismiss();
                 e.printStackTrace();
             }
 
