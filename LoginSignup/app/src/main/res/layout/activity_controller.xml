@@ -134,7 +134,8 @@
             android:layout_height="wrap_content"
             android:onClick="changeToHyb"
             android:layout_weight="0.5"
-            android:text="Hybrid"/>
+            android:text="Disconnect"
+            android:textSize="10sp"/>
     </LinearLayout>
 
 </LinearLayout>

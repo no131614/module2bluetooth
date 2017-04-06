@@ -82,6 +82,7 @@ import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
@@ -90,6 +91,7 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 
 public class ControllerActivity extends AppCompatActivity implements OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks,
@@ -118,6 +120,7 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
 
     private boolean ready = false;
     private boolean first = true;
+    private boolean alreadyConnected = false;
 
     private final int[] MAP_TYPES = {
             GoogleMap.MAP_TYPE_SATELLITE,
@@ -143,6 +146,7 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
     private ProgressDialog progress;
 
     BluetoothSocket btSocket = null;
+    OutputStream stream = null;
     private String userid;
     private boolean isBtConnected = false;
 
@@ -286,6 +290,19 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
 
         super.onStart();
         mGoogleApiClient.connect();
+        /*
+        if(btSocket != null) {
+            try {
+                btSocket.connect();
+            } catch (IOException e) {
+                msg("can't connect bluetooth");
+                e.printStackTrace();
+            }
+        }
+        */
+        if(address != null && alreadyConnected) {
+            connectBluetooth(address);
+        }
     }
 
     @Override
@@ -337,10 +354,9 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
      * Called when the zoom out button (the one with the -) is clicked.
      */
     public void onZoomOut(View view) {
-        if (!ready) {
-            return;
-        }
-        //sendText("logout" + "\0\n");
+
+       // sendText("logout" + "\0\n");
+        //sendText("JamesBest" + "\0\n");
         Disconnect();
         finish();
     }
@@ -450,10 +466,10 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
         mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
         if (mLastLocation != null) {
             //Toast.makeText(getApplicationContext(), mLastLocation.getLatitude() + " " + mLastLocation.getLongitude(), Toast.LENGTH_SHORT).show();
-            if(first) {
-                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude()), 16));
-                first = false;
-            }
+           // if(first) {
+                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(ubc, 16));
+             //   first = false;
+           // }
             if(mLastLocation != null && isNetworkAvailable()) {
                 DecimalFormat df = new DecimalFormat("#.####");
                 df.setRoundingMode(RoundingMode.CEILING);
@@ -647,10 +663,9 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
     }
 
     public void changeToHyb(View view) {
-        if (!ready) {
-            return;
-        }
-        mMap.setMapType(MAP_TYPES[2]);
+        sendText("logout" + "\0\n");
+        sendText("JamesBest" + "\0\n");
+        alreadyConnected = false;
     }
 
     public static StreetViewPanoramaLink findClosestLinkToBearing(StreetViewPanoramaLink[] links,
@@ -775,7 +790,7 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
             case CAMERA_REQUEST_CODE:
                 if(result_code == RESULT_OK) {
 
-                    progress = ProgressDialog.show(ControllerActivity.this, "Uploading Image...", "Please Wait");  //Show a progress dialog
+                   // progress = ProgressDialog.show(ControllerActivity.this, "Uploading Image...", "Please Wait");  //Show a progress dialog
                     Uri uri = i.getData();
                     StorageReference filepath = mStorage.child("Security").child(uri.getLastPathSegment());
                     filepath.putFile(uri).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
@@ -784,7 +799,7 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
                             Uri downloadUri = taskSnapshot.getDownloadUrl();
                             GPSCoor newcoor = new GPSCoor(mLastLocation.getLatitude(), mLastLocation.getLongitude(), userid, downloadUri.toString());
                             databaseReference.push().setValue(newcoor);
-                            progress.dismiss();
+                            //progress.dismiss();
                             msg("File successfully uploaded");
                         }
                     });
@@ -821,6 +836,7 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
     private class ConnectBT extends AsyncTask<Void, Void, Void>  // UI thread
     {
         private boolean ConnectSuccess = true;
+        BluetoothSocket temp = null;
 
         @Override
         protected void onPreExecute()
@@ -837,9 +853,9 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
                 {
                     myBluetooth = BluetoothAdapter.getDefaultAdapter();//Get the mobile bluetooth device
                     BluetoothDevice dispositivo = myBluetooth.getRemoteDevice(address);//Connects to the device's address and checks if it is available
-                    btSocket = dispositivo.createInsecureRfcommSocketToServiceRecord(myUUID);//Create a RFCOMM (SPP) connection
+                    temp = dispositivo.createInsecureRfcommSocketToServiceRecord(myUUID);//Create a RFCOMM (SPP) connection
                     BluetoothAdapter.getDefaultAdapter().cancelDiscovery();
-                    btSocket.connect();//Start the connection
+                    temp.connect();//Start the connection
                 }
             }
             catch (IOException e)
@@ -864,7 +880,15 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
             else
             {
                 msg("Connected.");
+                btSocket = temp;
+                try {
+                    stream = temp.getOutputStream();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
                 isBtConnected = true;
+                alreadyConnected = true;
+                sendText("JamesBest" + "\0\n");
                 sendText(userid + "\0\n");
 
             }
@@ -873,10 +897,20 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
     }
 
     //Method to disconnect the bluetooth connection
-    private void Disconnect()
-    {
+    private void Disconnect() {
+        if(stream != null) {
+            try {
+                stream.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            stream = null;
+        }
+
+
         if (btSocket!=null) //If the btSocket is busy
         {
+
             try
             {
                 btSocket.close(); //close connection
@@ -888,6 +922,7 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
                 e.printStackTrace();
                 msg("Error Disconnecting");
             }
+            btSocket = null;
         }
     }
 
@@ -905,18 +940,22 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
             try
             {
                 msg("Sending");
-                btSocket.getOutputStream().write(s.getBytes());
+                stream.write(s.getBytes());
             }
             catch (IOException e)
             {
-
-
                 e.printStackTrace();
 
                 msg("Connection Error. Please Reconnect Bluetooth");
                 isBtConnected = false;
                 //msg("Trying to reestablished connection");
 
+                try {
+                    stream.close();
+                } catch (Exception j) {
+                    j.printStackTrace();
+                }
+                stream = null;
                 try
                 {
                     btSocket.close(); //close connection
@@ -926,6 +965,7 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
                     ei.printStackTrace();
                     msg("CANNOT DISMISS");
                 }
+                btSocket = null;
                 //new ConnectBT().execute();
 
             }
