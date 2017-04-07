@@ -1,19 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-     Copyright (C) 2012 The Android Open Source Project
-
-     Licensed under the Apache License, Version 2.0 (the "License");
-     you may not use this file except in compliance with the License.
-     You may obtain a copy of the License at
-
-          http://www.apache.org/licenses/LICENSE-2.0
-
-     Unless required by applicable law or agreed to in writing, software
-     distributed under the License is distributed on an "AS IS" BASIS,
-     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-     See the License for the specific language governing permissions and
-     limitations under the License.
--->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -23,25 +8,22 @@
     android:orientation="vertical"
     android:screenOrientation="portrait"
     tools:context="ubc.cpen391.testing.loginsignup.ControllerActivity">
-
-    <fragment
-        android:id="@+id/map"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_weight="0.5"
-        class="com.google.android.gms.maps.SupportMapFragment"/>
     <fragment
         android:id="@+id/streetviewpanorama"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_weight="0.5"
         class="com.google.android.gms.maps.SupportStreetViewPanoramaFragment"/>
-
+    <fragment
+        android:id="@+id/map"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_weight="0.5"
+        class="com.google.android.gms.maps.SupportMapFragment"/>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
-
         <RelativeLayout
             android:layout_width="0dp"
             android:layout_height="match_parent"
@@ -80,26 +62,25 @@
                 android:layout_toRightOf="@id/scroll_down"
                 android:text="@string/right_arrow"/>
         </RelativeLayout>
+
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:layout_gravity="right"
             android:orientation="vertical">
             <Button
-                android:id="@+id/zoom_in"
+                android:id="@+id/location"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:onClick="onZoomIn"
+                android:onClick="findLocation"
                 android:text="Location"/>
             <Button
-                android:id="@+id/zoom_out"
+                android:id="@+id/log_out"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:onClick="onZoomOut"
+                android:onClick="logOut"
                 android:text="LOG OUT"/>
-
         </LinearLayout>
-
     </LinearLayout>
 
     <LinearLayout
@@ -109,33 +90,32 @@
             android:id="@+id/devices"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:onClick="changeToSat"
+            android:onClick="connectBT"
             android:layout_weight="0.5"
             android:text="Devices"/>
 
         <Button
-            android:id="@+id/terrain"
+            android:id="@+id/walk"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:onClick="changeToTer"
+            android:onClick="walkCommand"
             android:layout_weight="0.5"
             android:text="Walk"/>
         <Button
-            android:id="@+id/normal"
+            android:id="@+id/alert"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:onClick="changeToNorm"
+            android:onClick="alertCommand"
             android:layout_weight="0.5"
             android:text="Alert"/>
 
         <Button
-            android:id="@+id/hybrid"
+            android:id="@+id/disconnect"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:onClick="changeToHyb"
+            android:onClick="disconnectCommand"
             android:layout_weight="0.5"
             android:text="Disconnect"
             android:textSize="10sp"/>
     </LinearLayout>
-
 </LinearLayout>

@@ -2,6 +2,7 @@ package ubc.cpen391.testing.loginsignup;
 
 import android.app.ProgressDialog;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.os.Bundle;
@@ -54,7 +55,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         firebaseAuth = FirebaseAuth.getInstance();
         setContentView(R.layout.activity_main);
-
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         ButterKnife.inject(this);
 
         _loginButton.setOnClickListener(new View.OnClickListener() {

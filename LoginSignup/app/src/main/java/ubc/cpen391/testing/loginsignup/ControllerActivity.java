@@ -1,7 +1,6 @@
 package ubc.cpen391.testing.loginsignup;
 
 import android.Manifest;
-import android.app.ActionBar;
 import android.app.Fragment;
 import android.app.FragmentTransaction;
 import android.app.ProgressDialog;
@@ -21,37 +20,25 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Bundle;
 import android.provider.MediaStore;
 import android.provider.Settings;
 import android.speech.RecognizerIntent;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.FragmentActivity;
-import android.os.Bundle;
-import android.support.v4.app.FragmentManager;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
-import android.util.FloatMath;
-import android.util.Log;
 import android.view.KeyEvent;
-import android.view.LayoutInflater;
 import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.Window;
 import android.widget.Button;
-import android.widget.CompoundButton;
-import android.widget.PopupWindow;
-import android.widget.SeekBar;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -59,6 +46,7 @@ import com.google.android.gms.maps.OnStreetViewPanoramaReadyCallback;
 import com.google.android.gms.maps.StreetViewPanorama;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.SupportStreetViewPanoramaFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
@@ -66,16 +54,13 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.StreetViewPanoramaCamera;
 import com.google.android.gms.maps.model.StreetViewPanoramaLink;
 import com.google.android.gms.maps.model.StreetViewPanoramaLocation;
-
+import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ServerValue;
 import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
@@ -83,15 +68,13 @@ import com.google.firebase.storage.UploadTask;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.math.RoundingMode;
-import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 
 public class ControllerActivity extends AppCompatActivity implements OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks,
@@ -103,12 +86,6 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
         StreetViewPanorama.OnStreetViewPanoramaChangeListener,
         OnStreetViewPanoramaReadyCallback {
 
-    /**
-     * The amount by which to scroll the camera. Note that this amount is in raw pixels, not dp
-     * (density-independent pixels).
-     */
-    private static final int SCROLL_BY_PX = 100;
-
     private LatLng ubc = new LatLng(49.2620311, -123.2503899);
     private LatLng school = new LatLng(49.2646801, -123.2528899);
     private LatLng vancouver = new LatLng(49.2876743, -123.1162331);
@@ -118,9 +95,8 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
     private GoogleMap mMap;
     private StreetViewPanorama svp;
 
-    private boolean ready = false;
+    private boolean resetConnection = false;
     private boolean first = true;
-    private boolean alreadyConnected = false;
 
     private final int[] MAP_TYPES = {
             GoogleMap.MAP_TYPE_SATELLITE,
@@ -150,8 +126,6 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
     private String userid;
     private boolean isBtConnected = false;
 
-    private FirebaseAuth firebaseAuth;
-    private FirebaseUser user;
     private DatabaseReference databaseReference;
     private StorageReference mStorage;
 
@@ -159,11 +133,8 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
     private BluetoothFragment bdevice;
     private ImageFragment imageFragment;
     private Button connectButton;
+    private HashMap<Marker, GPSCoor> map;
 
-    private PopupWindow window;
-    private LayoutInflater inflater;
-
-    private static final int GALLERY_INTENT = 2;
     private static final int CAMERA_REQUEST_CODE = 1;
 
     private static final int PAN_BY_DEG = 30;
@@ -177,6 +148,7 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
 
         setContentView(R.layout.activity_controller);
         connectButton = (Button) findViewById(R.id.devices);
+        map = new HashMap<>();
 
         databaseReference = FirebaseDatabase.getInstance().getReference("Geolocation");
         mStorage = FirebaseStorage.getInstance().getReference();
@@ -187,7 +159,7 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
         bdevice = new BluetoothFragment();
         imageFragment = new ImageFragment();
         Intent newint = getIntent();
-        userid = newint.getStringExtra("user_id"); //receive the address of the bluetooth device
+        userid = newint.getStringExtra("user_id");
 
 
         schooloc = new Location("school");
@@ -205,7 +177,6 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
             locationManager = new GPSChecker(locationManagerContext);
         }
 
-
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .addConnectionCallbacks(this)
                 .addOnConnectionFailedListener(this)
@@ -213,7 +184,6 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
                 .build();
 
 
-        ready = false;
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
@@ -227,7 +197,6 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.popup_menu, menu);
         return true;
-
     }
 
     @Override
@@ -259,25 +228,14 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
         if (myBluetooth == null) {
             //Display a message if the bluetooth is not available on the android device
             Toast.makeText(getApplicationContext(), "Bluetooth Device Not Available", Toast.LENGTH_LONG).show();
-
-            //close the app
-            return;
-        } else if (!myBluetooth.isEnabled()) {
-            //Ask to the user turn on the bluetooth on the device
-            Intent turnBTon = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivityForResult(turnBTon, 1);
-        }
-
-        pairedDevices = myBluetooth.getBondedDevices();
-
-        if (pairedDevices.size() > 0) {
-            for (BluetoothDevice bt : pairedDevices) {
-                address = bt.getAddress();
+            finish();
+        } else {
+            if (!myBluetooth.isEnabled()) {
+                //Ask to the user turn on the bluetooth on the device
+                Intent turnBTon = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+                startActivityForResult(turnBTon, 1);
             }
         }
-
-     //   new ConnectBT().execute(); //Call the class to connect
-
     }
 
     public void connectBluetooth(String s) {
@@ -290,18 +248,10 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
 
         super.onStart();
         mGoogleApiClient.connect();
-        /*
-        if(btSocket != null) {
-            try {
-                btSocket.connect();
-            } catch (IOException e) {
-                msg("can't connect bluetooth");
-                e.printStackTrace();
-            }
-        }
-        */
-        if(address != null && alreadyConnected) {
+
+        if(address != null && resetConnection) {
             connectBluetooth(address);
+            resetConnection = false;
         }
     }
 
@@ -312,51 +262,34 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
         if (mGoogleApiClient != null && mGoogleApiClient.isConnected()) {
             mGoogleApiClient.disconnect();
         }
-
         Disconnect();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        // setUpMapIfNeeded();
     }
 
-    /**
-     * When the map is not ready the CameraUpdateFactory cannot be used. This should be called on
-     * all entry points that call methods on the Google Maps API.
-     */
     private boolean checkReady() {
         if (mMap == null) {
-            Toast.makeText(this, R.string.map_not_ready, Toast.LENGTH_SHORT).show();
             return false;
         }
         return true;
     }
 
-    /**
-     * Called when the zoom in button (the one with the +) is clicked.
-     */
-    public void onZoomIn(View view) {
-        if (!ready) {
+    public void findLocation(View view) {
+        if (!checkReady()) {
             return;
         }
 
         if (mLastLocation != null) {
-            //Toast.makeText(getApplicationContext(), mLastLocation.getLatitude() + " " + mLastLocation.getLongitude(), Toast.LENGTH_SHORT).show();
             initCamera(mLastLocation);
-
         }
         svp.setPosition(ubc);
     }
 
-    /**
-     * Called when the zoom out button (the one with the -) is clicked.
-     */
-    public void onZoomOut(View view) {
-
-       // sendText("logout" + "\0\n");
-        //sendText("JamesBest" + "\0\n");
+    public void logOut(View view) {
+        sendText("a" + "\0\n");
         Disconnect();
         finish();
     }
@@ -432,25 +365,9 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
         return DEFAULT_ANIMATION_DURATION;
     }
 
-    /**
-     * Update the enabled state of the custom duration controls.
-     */
-
-    private void changeCamera(CameraUpdate update) {
-        changeCamera(update, null);
-    }
-
-    /**
-     * Change the camera position by moving or animating the camera depending on the state of the
-     * animate toggle button.
-     */
-    private void changeCamera(CameraUpdate update, GoogleMap.CancelableCallback callback) {
-        mMap.moveCamera(update);
-    }
 
     @Override
     public void onConnected(Bundle bundle) {
-
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
@@ -464,23 +381,15 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
             return;
         }
         mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
-        if (mLastLocation != null) {
-            //Toast.makeText(getApplicationContext(), mLastLocation.getLatitude() + " " + mLastLocation.getLongitude(), Toast.LENGTH_SHORT).show();
-           // if(first) {
-                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(ubc, 16));
-             //   first = false;
-           // }
-            if(mLastLocation != null && isNetworkAvailable()) {
-                DecimalFormat df = new DecimalFormat("#.####");
-                df.setRoundingMode(RoundingMode.CEILING);
-                String la = df.format(mLastLocation.getLatitude());
-                String lo = df.format(mLastLocation.getLongitude());
+        if (mLastLocation != null && mMap != null && first) {
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(ubc, 16));
 
+            if(isNetworkAvailable()) {
                 String address = getAddressFromLatLng(new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude()));
-                Toast.makeText(getApplicationContext(), address, Toast.LENGTH_LONG).show();
+                msg(address);
             }
+            first = false;
         } else {
-            //Toast.makeText(getApplicationContext(), "Please turn on Location Service", Toast.LENGTH_SHORT).show();
             if(!locationManager.isLocationEnabled()){
                 showAlert();
             }
@@ -494,29 +403,25 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
 
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-        Toast.makeText(getApplicationContext(), "Connection Failed", Toast.LENGTH_SHORT).show();
+        msg("Connection Failed");
     }
 
     @Override
     public void onInfoWindowClick(Marker marker) {
-
-        if(marker.getTitle() != null) {
+        GPSCoor coor = (GPSCoor) marker.getTag();
+        if(coor.getImage()!= null) {
             FragmentTransaction ft = getFragmentManager().beginTransaction();
             Fragment prev = getFragmentManager().findFragmentByTag("dialog");
-
-
             if (prev != null) {
                 ft.remove(prev);
             }
             ft.addToBackStack(null);
 
             // Create and show the dialog.
-            ImageFragment newFragment = ImageFragment.newInstance(marker.getTitle());
+            ImageFragment newFragment = ImageFragment.newInstance(coor.getImage());
             newFragment.show(ft, "dialog");
         }
-
     }
-
 
 
     @Override
@@ -530,7 +435,7 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
         Location mark = new Location("marker");
         mark.setLatitude(marker.getPosition().latitude);
         mark.setLongitude(marker.getPosition().longitude);
-        initCamera(mark);
+        moveMarker(mark);
         showWindow(marker.getTitle());
         return true;
     }
@@ -544,7 +449,6 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
     public void onMapReady(GoogleMap googleMap) {
 
         mMap = googleMap;
-        ready = true;
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
             mMap.setMyLocationEnabled(true);
@@ -559,11 +463,10 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
 
                 for(DataSnapshot ds: dataSnapshot.getChildren()) {
                     GPSCoor coor = ds.getValue(GPSCoor.class);
-                    mMap.addMarker(new MarkerOptions()
-                            .position(new LatLng(coor.getLatitude(), coor.getLongitude()))
-                            .title(coor.getImage()));
+                    if(coor.getImage() != null || coor.getUid().equals(userid)) {
+                        addMarkers(coor);
+                    }
                 }
-
             }
 
             @Override
@@ -577,11 +480,9 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
             @Override
             public void onChildAdded(DataSnapshot dataSnapshot, String s) {
                 GPSCoor coor = dataSnapshot.getValue(GPSCoor.class);
-               // SimpleDateFormat sfd = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
-                //sfd.format(new Date(coor.getTimestampCreatedLong()));
-                mMap.addMarker(new MarkerOptions()
-                        .position(new LatLng(coor.getLatitude(), coor.getLongitude()))
-                        .title(coor.getImage()));
+                if(coor.getImage() != null || coor.getUid().equals(userid)) {
+                    addMarkers(coor);
+                }
             }
 
             @Override
@@ -607,7 +508,30 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
 
         initListeners();
     }
+    private void addMarkers(GPSCoor coor) {
+        String title = coor.getUid();
+        if(coor.getTimestamp() != null) {
+            Date date = new Date(coor.getTimestampLong());
+            SimpleDateFormat sfd = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+            sfd.format(date);
+            title = sfd.format(date);
+        }
+        if(coor.getImage() != null) {
+            Marker marker = mMap.addMarker(new MarkerOptions()
+                    .position(new LatLng(coor.getLatitude(), coor.getLongitude()))
+                    .title(title)
+                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
+            marker.setTag(coor);
+        }
+        else {
+            Marker marker = mMap.addMarker(new MarkerOptions()
+                    .position(new LatLng(coor.getLatitude(), coor.getLongitude()))
+                    .title(title)
+                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
+            marker.setTag(coor);
+        }
 
+    }
     private void initCamera(Location location) {
         CameraPosition position = CameraPosition.builder()
                 .target(new LatLng(location.getLatitude(),
@@ -623,7 +547,22 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
 
     }
 
-    public void changeToSat(View view) {
+    private void moveMarker(Location location) {
+        CameraPosition position = CameraPosition.builder()
+                .target(new LatLng(location.getLatitude(),
+                        location.getLongitude()))
+                .zoom(20)
+                .bearing(0.0f)
+                .tilt(0.0f)
+                .build();
+
+        mMap.animateCamera(CameraUpdateFactory.newCameraPosition(position), null);
+        mMap.setTrafficEnabled(true);
+        mMap.getUiSettings().setZoomControlsEnabled( true );
+
+    }
+
+    public void connectBT(View view) {
         if(!isBtConnected) {
             bdevice.show(fm, "bluetooth");
         }
@@ -632,7 +571,7 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
         }
     }
 
-    public void changeToNorm(View view) {
+    public void alertCommand(View view) {
         if(mLastLocation != null && databaseReference != null) {
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
                 // TODO: Consider calling
@@ -645,13 +584,13 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
                 msg("Please turn on Camera Permissions in Settings");
                 return;
             }
+            resetConnection = true;
             Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-
             startActivityForResult(intent, CAMERA_REQUEST_CODE);
         }
     }
 
-    public void changeToTer(View view) {
+    public void walkCommand(View view) {
         if(svp != null) {
             StreetViewPanoramaLocation location = svp.getLocation();
             StreetViewPanoramaCamera camera = svp.getPanoramaCamera();
@@ -662,10 +601,8 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
         }
     }
 
-    public void changeToHyb(View view) {
+    public void disconnectCommand(View view) {
         sendText("logout" + "\0\n");
-        sendText("JamesBest" + "\0\n");
-        alreadyConnected = false;
     }
 
     public static StreetViewPanoramaLink findClosestLinkToBearing(StreetViewPanoramaLink[] links,
@@ -752,7 +689,6 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
             case 100:
                 if(result_code == RESULT_OK && i != null) {
 
-
                     ArrayList<String> result = i.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
                     sendText(result.get(0) + "\0\n");
                     if(result.get(0).equals("school") || result.get(0).equals("School")) {
@@ -760,37 +696,19 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
                         initCamera(schooloc);
                         svp.setPosition(school);
                     }
-
                     else if (result.get(0).equals("Vancouver")) {
                         initCamera(city);
                         svp.setPosition(vancouver);
-
                     }
-                    /*
-                    else if (result.get(0).equals("alert")) {
-                        if(mLastLocation != null && databaseReference != null) {
-                            GPSCoor newcoor = new GPSCoor(mLastLocation.getLatitude(), mLastLocation.getLongitude(), userid);
-                            databaseReference.push().setValue(newcoor);
-
-                        }
-
-                    }
-
-                    */
                     else {
-
-                        Toast.makeText(getApplicationContext(), result.get(0), Toast.LENGTH_SHORT).show();
+                        msg(result.get(0));
                     }
-
                 }
-
                 break;
-
 
             case CAMERA_REQUEST_CODE:
                 if(result_code == RESULT_OK) {
 
-                   // progress = ProgressDialog.show(ControllerActivity.this, "Uploading Image...", "Please Wait");  //Show a progress dialog
                     Uri uri = i.getData();
                     StorageReference filepath = mStorage.child("Security").child(uri.getLastPathSegment());
                     filepath.putFile(uri).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
@@ -799,12 +717,17 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
                             Uri downloadUri = taskSnapshot.getDownloadUrl();
                             GPSCoor newcoor = new GPSCoor(mLastLocation.getLatitude(), mLastLocation.getLongitude(), userid, downloadUri.toString());
                             databaseReference.push().setValue(newcoor);
-                            //progress.dismiss();
                             msg("File successfully uploaded");
+                        }
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            e.printStackTrace();
+                            msg("Failed to Upload Image");
                         }
                     });
                 }
-
                 break;
         }
     }
@@ -812,16 +735,12 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
     @Override
     public void onMapClick(LatLng latLng) {
 
-        Toast.makeText(getApplicationContext(), "HELLO", Toast.LENGTH_SHORT).show();
-
     }
 
     @Override
     public void onStreetViewPanoramaReady(StreetViewPanorama streetViewPanorama) {
         svp = streetViewPanorama;
-
         svp.setPosition(ubc);
-
     }
 
     @Override
@@ -829,14 +748,11 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
 
     }
 
-
-
-
     //The purpose of this class is to create and maintain the bluetooth connection
     private class ConnectBT extends AsyncTask<Void, Void, Void>  // UI thread
     {
         private boolean ConnectSuccess = true;
-        BluetoothSocket temp = null;
+        private BluetoothSocket temp = null;
 
         @Override
         protected void onPreExecute()
@@ -862,7 +778,6 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
             {
                 e.printStackTrace();
                 ConnectSuccess = false;//If the try failed, you can check the exception here
-
             }
             return null;
         }
@@ -876,10 +791,12 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
             {
                 msg("Connection Failed. Please try again.");
                 isBtConnected = false;
+                address = null;
+
             }
             else
             {
-                msg("Connected.");
+                msg("Bluetooth Connected");
                 btSocket = temp;
                 try {
                     stream = temp.getOutputStream();
@@ -887,19 +804,18 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
                     e.printStackTrace();
                 }
                 isBtConnected = true;
-                alreadyConnected = true;
                 sendText("JamesBest" + "\0\n");
                 sendText(userid + "\0\n");
-
             }
             progress.dismiss();
         }
     }
 
     //Method to disconnect the bluetooth connection
-    private void Disconnect() {
+    public void Disconnect() {
         if(stream != null) {
             try {
+                stream.flush();
                 stream.close();
             } catch (Exception e) {
                 e.printStackTrace();
@@ -907,22 +823,19 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
             stream = null;
         }
 
-
         if (btSocket!=null) //If the btSocket is busy
         {
-
             try
             {
                 btSocket.close(); //close connection
-                msg("Successfully Disconnected");
                 isBtConnected = false;
             }
             catch (IOException e)
             {
                 e.printStackTrace();
-                msg("Error Disconnecting");
             }
             btSocket = null;
+            address = null;
         }
     }
 
@@ -935,39 +848,20 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
     //Function to send the text to DE1-Soc
     private void sendText(String s)
     {
-        if (btSocket!=null)
+        if (btSocket!=null && stream != null)
         {
             try
             {
                 msg("Sending");
                 stream.write(s.getBytes());
+                stream.flush();
             }
             catch (IOException e)
             {
                 e.printStackTrace();
 
                 msg("Connection Error. Please Reconnect Bluetooth");
-                isBtConnected = false;
-                //msg("Trying to reestablished connection");
-
-                try {
-                    stream.close();
-                } catch (Exception j) {
-                    j.printStackTrace();
-                }
-                stream = null;
-                try
-                {
-                    btSocket.close(); //close connection
-                }
-                catch (IOException ei)
-                {
-                    ei.printStackTrace();
-                    msg("CANNOT DISMISS");
-                }
-                btSocket = null;
-                //new ConnectBT().execute();
-
+                Disconnect();
             }
         }
 

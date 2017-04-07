@@ -1,7 +1,6 @@
 package ubc.cpen391.testing.loginsignup;
 
 import android.app.DialogFragment;
-import android.media.Image;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -9,11 +8,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.TextView;
 
 import com.squareup.picasso.Picasso;
-
-import org.w3c.dom.Text;
 
 /**
  * Created by james on 2017-04-04.
@@ -44,6 +40,7 @@ public class ImageFragment extends DialogFragment{
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.image_marker, container, false);
         ImageView image = (ImageView) rootView.findViewById(R.id.imageView);
+
         Picasso.with(getActivity()).load(uri).rotate(90).centerCrop().fit().into(image);
 
         Button button = (Button)rootView.findViewById(R.id.button);
