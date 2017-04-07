@@ -56,6 +56,7 @@ import com.google.android.gms.maps.model.StreetViewPanoramaLink;
 import com.google.android.gms.maps.model.StreetViewPanoramaLocation;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -97,6 +98,7 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
 
     private boolean resetConnection = false;
     private boolean first = true;
+    private FirebaseAuth auth;
 
     private final int[] MAP_TYPES = {
             GoogleMap.MAP_TYPE_SATELLITE,
@@ -149,7 +151,8 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
         setContentView(R.layout.activity_controller);
         connectButton = (Button) findViewById(R.id.devices);
         map = new HashMap<>();
-
+        auth = FirebaseAuth.getInstance();
+        FirebaseAuth.getInstance().signOut();
         databaseReference = FirebaseDatabase.getInstance().getReference("Geolocation");
         mStorage = FirebaseStorage.getInstance().getReference();
 
@@ -177,6 +180,11 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
             locationManager = new GPSChecker(locationManagerContext);
         }
 
+        // recovering the instance state
+        if (savedInstanceState != null) {
+            address = savedInstanceState.getString("address");
+            resetConnection = savedInstanceState.getBoolean("resetConnection");
+        }
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .addConnectionCallbacks(this)
                 .addOnConnectionFailedListener(this)
@@ -240,19 +248,24 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
 
     public void connectBluetooth(String s) {
         address = s;
+        resetConnection = false;
         new ConnectBT().execute();
     }
 
     @Override
     protected void onStart() {
-
         super.onStart();
+        msg("restarting");
         mGoogleApiClient.connect();
-
-        if(address != null && resetConnection) {
+        if(address != null) {
             connectBluetooth(address);
-            resetConnection = false;
         }
+    }
+
+    @Override
+    protected void onPause() {
+        resetConnection = true;
+        super.onPause();
     }
 
     @Override
@@ -265,6 +278,21 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
         Disconnect();
     }
 
+    @Override
+    public void onSaveInstanceState(Bundle savedInstanceState) {
+        super.onSaveInstanceState(savedInstanceState);
+        savedInstanceState.putBoolean("resetConnection", resetConnection);
+        savedInstanceState.putString("address", address);
+    }
+
+    @Override
+    public void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        String a = savedInstanceState.getString("address");
+        //Boolean b = savedInstanceState.getBoolean("resetConnection");
+        msg(a);
+        connectBluetooth(a);
+    }
     @Override
     protected void onResume() {
         super.onResume();
@@ -289,7 +317,6 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
     }
 
     public void logOut(View view) {
-        sendText("a" + "\0\n");
         Disconnect();
         finish();
     }
@@ -584,7 +611,6 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
                 msg("Please turn on Camera Permissions in Settings");
                 return;
             }
-            resetConnection = true;
             Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
             startActivityForResult(intent, CAMERA_REQUEST_CODE);
         }
@@ -602,7 +628,7 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
     }
 
     public void disconnectCommand(View view) {
-        sendText("logout" + "\0\n");
+        sendText("q" + "\0\n");
     }
 
     public static StreetViewPanoramaLink findClosestLinkToBearing(StreetViewPanoramaLink[] links,
@@ -708,7 +734,6 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
 
             case CAMERA_REQUEST_CODE:
                 if(result_code == RESULT_OK) {
-
                     Uri uri = i.getData();
                     StorageReference filepath = mStorage.child("Security").child(uri.getLastPathSegment());
                     filepath.putFile(uri).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
@@ -816,8 +841,13 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
         if(stream != null) {
             try {
                 stream.flush();
-                stream.close();
             } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            try {
+                stream.close();
+            } catch (IOException e) {
                 e.printStackTrace();
             }
             stream = null;
@@ -828,12 +858,12 @@ public class ControllerActivity extends AppCompatActivity implements OnMapReadyC
             try
             {
                 btSocket.close(); //close connection
-                isBtConnected = false;
             }
             catch (IOException e)
             {
                 e.printStackTrace();
             }
+            isBtConnected = false;
             btSocket = null;
             address = null;
         }

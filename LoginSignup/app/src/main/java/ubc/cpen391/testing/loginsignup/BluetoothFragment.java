@@ -81,7 +81,7 @@ public class BluetoothFragment extends DialogFragment{
             String info = ((TextView) v).getText().toString();
             address = info.substring(info.length() - 17);
 
-            ((ControllerActivity)getActivity()).Disconnect();
+            //.Disconnect();
             ((ControllerActivity)getActivity()).connectBluetooth(address);
 
             Toast.makeText(getActivity(), address, Toast.LENGTH_SHORT).show();
